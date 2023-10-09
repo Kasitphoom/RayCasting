@@ -77,18 +77,7 @@ void getCurrentMousePosition(Display* display, int& mouseX, int& mouseY) {
 
 void handleKeyPress(KeySym key) {
     // Handle key press here
-    if (pressedKeys.find(XK_w) != pressedKeys.end()) {
-        playerY--;
-    }
-    if (pressedKeys.find(XK_s) != pressedKeys.end()) {
-        playerY++;
-    }
-    if (pressedKeys.find(XK_a) != pressedKeys.end()) {
-        playerX--;
-    }
-    if (pressedKeys.find(XK_d) != pressedKeys.end()) {
-        playerX++;
-    }
+    
 }
 
 void handleKeyRelease(KeySym key) {
@@ -337,7 +326,7 @@ void draw()
 
 void controls() // handles keyboard, mouse controls and player movement; windows-specific
 {
-    std::cout << (int)player.ang_h << (int)player.ang_h % 3600 << std::endl;
+    // std::cout << (int)player.ang_h << (int)player.ang_h % 3600 << std::endl;
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
     
@@ -348,14 +337,34 @@ void controls() // handles keyboard, mouse controls and player movement; windows
     if (event.type == KeyPress) {
         KeySym key = XLookupKeysym(&event.xkey, 0);
         pressedKeys.insert(key);
-        handleKeyPress(key);
+        std::cout << key << std::endl;
+        if (pressedKeys.find(XK_w) != pressedKeys.end()) {
+            player.vx += dy;
+            player.vy += dx;
+            std::cout << "w" << std::endl;
+        }
+        if (pressedKeys.find(XK_s) != pressedKeys.end()) {
+            player.vx -= dy;
+            player.vy -= dx;
+            std::cout << "s" << std::endl;
+        }
+        if (pressedKeys.find(XK_a) != pressedKeys.end()) {
+            player.vx += dx;
+            player.vy -= dy;
+            std::cout << "a" << std::endl;
+        }
+        if (pressedKeys.find(XK_d) != pressedKeys.end()) {
+            player.vx -= dx;
+            player.vy += dy;
+            std::cout << "d" << std::endl;
+        }
     } else if (event.type == KeyRelease) {
         KeySym key = XLookupKeysym(&event.xkey, 0);
         pressedKeys.erase(key);
         handleKeyRelease(key);
     }
-    std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
-    std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
+    // std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
+    // std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
     if (map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256 > 0)
         player.vx = -player.vx / 2; // collisions in x axis - bounce back with half the velocity
     if (map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 > 0)
@@ -424,7 +433,6 @@ int main() {
         
         draw();
         displayText(display, win, gc);
-        usleep(1000);
     }
 
     return 0;

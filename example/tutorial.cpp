@@ -257,17 +257,17 @@ void controls() // handles keyboard, mouse controls and player movement; windows
 {
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
-    if (GetKeyState(0x41) & 0x8000)
+    if (GetKeyState(0x41) & 0x8000) // 0x41 is what key? A
     {
         player.vx += dx;
         player.vy -= dy;
     }; // WASD movement
-    if (GetKeyState(0x44) & 0x8000)
+    if (GetKeyState(0x44) & 0x8000) // 0x44 is what key? D
     {
         player.vx -= dx;
         player.vy += dy;
     };
-    if (GetKeyState(0x57) & 0x8000)
+    if (GetKeyState(0x57) & 0x8000) // 0x57 is what key? W
     {
         player.vx += dy;
         player.vy += dx;
