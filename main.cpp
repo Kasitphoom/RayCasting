@@ -119,6 +119,7 @@ void initializeX() {
     swa.event_mask = KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask;
     win = XCreateWindow(display, root, 0, 0, screenWidth, screenHeight, 0, DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen), CWEventMask, &swa);
 
+    XSetWindowBackground(display, win, WhitePixel(display, screen));
 
     XFontStruct* font = XLoadQueryFont(display, "fixed");
 
@@ -336,12 +337,9 @@ void draw()
 
 void controls() // handles keyboard, mouse controls and player movement; windows-specific
 {
-    std::cout << "here" << std::endl;
     std::cout << (int)player.ang_h << (int)player.ang_h % 3600 << std::endl;
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
-    std::cout << "here1" << std::endl;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
-    std::cout << "here2" << std::endl;
     
     XEvent event;
 
@@ -387,17 +385,22 @@ void displayText(Display* display, Window win, GC gc) {
     // Set the foreground color (you can choose your own color)
     XSetForeground(display, gc, WhitePixel(display, screen));
 
+
     // Loop through the character buffer and draw each character on the window
     for (int y = 0; y < res_Y; ++y) {
         for (int x = 0; x < res_X; ++x) {
             int index = y * res_X + x;
             char ch = char_buff[index];
             int color = color_buff[index];
+            
+            XSetForeground(display, gc, WhitePixel(display, screen));
+            XFillRectangle(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, CHAR_WIDTH, CHAR_HEIGHT * 2);
 
             // Set the foreground color based on color_buff
             XSetForeground(display, gc, color);
 
             // Draw the character on the window
+            
             XDrawString(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, &ch, 1);
         }
     }
