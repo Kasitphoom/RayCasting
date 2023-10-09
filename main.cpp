@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdint>
+#include <unistd.h>
 
 Display* display;
 Window root;
@@ -327,15 +328,20 @@ void draw()
             color_buff[offset] = color;
 
             offset += res_X; // go down by 1 row
-            std::cout << offset << " , " << res_X * res_Y << std::endl;
-        }                    // end of column
-    }                        // end of drawing
+            
+        }   
+                        // end of column
+    }                       // end of drawing
 }
 
 void controls() // handles keyboard, mouse controls and player movement; windows-specific
 {
+    std::cout << "here" << std::endl;
+    std::cout << (int)player.ang_h << (int)player.ang_h % 3600 << std::endl;
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
+    std::cout << "here1" << std::endl;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
+    std::cout << "here2" << std::endl;
     
     XEvent event;
 
@@ -350,7 +356,8 @@ void controls() // handles keyboard, mouse controls and player movement; windows
         pressedKeys.erase(key);
         handleKeyRelease(key);
     }
-
+    std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
+    std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
     if (map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256 > 0)
         player.vx = -player.vx / 2; // collisions in x axis - bounce back with half the velocity
     if (map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 > 0)
@@ -411,8 +418,10 @@ int main() {
     while (true) {
         controls();
         cast();
+        
         draw();
-        // displayText(display, win, gc);
+        displayText(display, win, gc);
+        usleep(1000);
     }
 
     return 0;
