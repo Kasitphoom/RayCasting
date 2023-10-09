@@ -324,44 +324,61 @@ void draw()
     }                       // end of drawing
 }
 
-void controls() // handles keyboard, mouse controls and player movement; windows-specific
+void MouseEvent() // handles keyboard, mouse controls and player movement; windows-specific
 {
-    // std::cout << (int)player.ang_h << (int)player.ang_h % 3600 << std::endl;
-    double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
-    double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
     
+    getCurrentMousePosition(display, mouseX, mouseY);
+    // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
+    player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; // player horizontal angle
+    player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+    horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
+    
+    if (player.ang_h < 3600)
+        player.ang_h += 3600; // if player angle is less than 360 degrees, add 360 degrees so its never negative
+}
+
+void handleEvent(){
     XEvent event;
 
-    XNextEvent(display, &event);
+    while(XPending(display)){
+        XNextEvent(display, &event);
+        if (event.type == KeyPress) {
+            KeySym key = XLookupKeysym(&event.xkey, 0);
+            pressedKeys.insert(key);
+        } else if (event.type == KeyRelease) {
+            KeySym key = XLookupKeysym(&event.xkey, 0);
+            pressedKeys.erase(key);
+        }
 
-    if (event.type == KeyPress) {
-        KeySym key = XLookupKeysym(&event.xkey, 0);
-        pressedKeys.insert(key);
-        std::cout << key << std::endl;
-        if (pressedKeys.find(XK_w) != pressedKeys.end()) {
-            player.vx += dy;
-            player.vy += dx;
-            std::cout << "w" << std::endl;
+        if (event.type == MotionNotify){
+            MouseEvent();
         }
-        if (pressedKeys.find(XK_s) != pressedKeys.end()) {
-            player.vx -= dy;
-            player.vy -= dx;
-            std::cout << "s" << std::endl;
-        }
-        if (pressedKeys.find(XK_a) != pressedKeys.end()) {
-            player.vx += dx;
-            player.vy -= dy;
-            std::cout << "a" << std::endl;
-        }
-        if (pressedKeys.find(XK_d) != pressedKeys.end()) {
-            player.vx -= dx;
-            player.vy += dy;
-            std::cout << "d" << std::endl;
-        }
-    } else if (event.type == KeyRelease) {
-        KeySym key = XLookupKeysym(&event.xkey, 0);
-        pressedKeys.erase(key);
-        handleKeyRelease(key);
+    }
+}
+
+void updateMovement(){
+    double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
+    double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
+
+    if (pressedKeys.find(XK_w) != pressedKeys.end()) {
+        player.vx += dy;
+        player.vy += dx;
+        std::cout << "w" << std::endl;
+    }
+    if (pressedKeys.find(XK_s) != pressedKeys.end()) {
+        player.vx -= dy;
+        player.vy -= dx;
+        std::cout << "s" << std::endl;
+    }
+    if (pressedKeys.find(XK_a) != pressedKeys.end()) {
+        player.vx += dx;
+        player.vy -= dy;
+        std::cout << "a" << std::endl;
+    }
+    if (pressedKeys.find(XK_d) != pressedKeys.end()) {
+        player.vx -= dx;
+        player.vy += dy;
+        std::cout << "d" << std::endl;
     }
     // std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
     // std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
@@ -373,18 +390,6 @@ void controls() // handles keyboard, mouse controls and player movement; windows
     player.y += player.vy;
     player.vx *= (1 - player.friction); // friction reduces velocity values
     player.vy *= (1 - player.friction);
-
-    // for mouse
-    if (event.type == MotionNotify)
-    {
-        getCurrentMousePosition(display, mouseX, mouseY);
-        // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
-        player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; // player horizontal angle
-        player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
-        horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
-    }
-    if (player.ang_h < 3600)
-        player.ang_h += 3600; // if player angle is less than 360 degrees, add 360 degrees so its never negative
 }
 
 void displayText(Display* display, Window win, GC gc) {
@@ -414,6 +419,7 @@ void displayText(Display* display, Window win, GC gc) {
         }
     }
 
+
     // Flush the changes to the window
     XFlush(display);
 
@@ -428,7 +434,10 @@ int main() {
     XEvent event;
 
     while (true) {
-        controls();
+        
+        
+        handleEvent();
+        updateMovement();
         cast();
         
         draw();
