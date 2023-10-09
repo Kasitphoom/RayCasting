@@ -183,22 +183,22 @@ void initGame(){
     for (int x = 0; x < map_size; x++) // random floor/ceiling textures
         for (int y = 0; y < map_size; y++)
         {
-            map[x][y] += 256 * (rand() % 3);
-            map[x][y] += 65536 * (rand() % 3);
+            map[x][y] += 256 * (1);
+            map[x][y] += 65536 * (2);
         }
 
     
     
 
     player.x = 6;
-    player.y = 6;
+    player.y = 6.5;
     player.ang_h = 450; // put the player somewhere in the middle, angle is in 0.1 degree increments
 
     for (int x = 0; x < 32; x++) // texture generation
         for (int y = 0; y < 32; y++)
         {
-            textures[x + y * 32] = (12 - 8 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0)) + rand() % 2) + (4 + 4 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0))) * 256; // brick texture;last term is color (4=red, 8=gray)
-            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 1 * 256;                                                   // large brick texture;last term is color (1=blue)
+            textures[x + y * 32] = (12 - 8 * ((y % 4 == 0) || ((x + 4 * (y / 6)) % 16 == 0)) + rand() % 2) + (4 + 4 * ((y % 4 == 0) || ((x + 4 * (y / 6)) % 16 == 0))) * 256; // brick texture;last term is color (4=red, 8=gray)
+            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + (1 + 1 * ((y % 6 == 0) || ((x + 4 * (y / 31)) % 16 == 0))) * 256;                                                   // large brick texture;last term is color (1=blue)
             textures[x + y * 32 + 2048] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                                   // large brick texture;last term is color (2=green)
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
