@@ -26,7 +26,7 @@ int CHAR_HEIGHT = 0;
 const int res_X = 120;           // resolution x
 const int res_Y = 60;            // resolution y; right-click on the window title, select properties and set the proper size
 const int fov = 600;             // field of view, in 0.1 degree increments (60 degrees)
-const int map_size = 16;         // square map size
+const int map_size = 8;         // square map size
 const double torad = M_PI / 180; // degrees to radians conversion factor
 double sintab[3600];             // lookup table of sine values, every 0.1 degree
 double fisheye[res_X];           // lookup table for fisheye correction, 1 value for every screen column
@@ -43,6 +43,8 @@ int typemap[res_X];                // wall type (if we want various textures etc
 
 // World map
 int map[map_size][map_size]; // world map
+
+
 
 // Structure holding player data
 struct
@@ -142,9 +144,35 @@ void initGame(){
         map[map_size - 1][i] = 1;
     };
 
-    map[3][1] = 1;
-    map[2][4] = 2;
-    map[7][7] = 1; // some random blocks;
+    // int map = {
+    //     {1, 1, 1, 1, 1, 1, 1, 1},
+    //     {1, 0, 0, 0, 1, 0, 2, 1},
+    //     {1, 0, 1, 0, 0, 0, 2, 1},
+    //     {1, 0, 1, 1, 1, 1, 1, 1},
+    //     {1, 0, 1, 0, 0, 0, 0, 1},
+    //     {1, 0, 1, 0, 1, 1, 0, 1},
+    //     {1, 0, 0, 0, 0, 1, 0, 1},
+    //     {1, 1, 1, 1, 1, 1, 1, 1}
+    // };
+
+    map[1][4] = 1;
+    map[1][6] = 2;
+    map[2][2] = 1;
+    map[2][6] = 2;
+    map[3][2] = 1;
+    map[3][3] = 1;
+    map[3][4] = 1;
+    map[3][5] = 1;
+    map[3][6] = 1;
+    map[4][2] = 1;
+    map[5][2] = 1;
+    map[5][4] = 1;
+    map[5][5] = 1;
+    map[6][5] = 1;
+
+    // map[3][1] = 1;
+    // map[2][4] = 2;
+    // map[7][7] = 1; // some random blocks;
 
     for (int x = 0; x < map_size; x++) // random floor/ceiling textures
         for (int y = 0; y < map_size; y++)
@@ -152,6 +180,9 @@ void initGame(){
             map[x][y] += 256 * (rand() % 3);
             map[x][y] += 65536 * (rand() % 3);
         }
+
+    
+    
 
     player.x = 6;
     player.y = 5.5;
@@ -363,22 +394,18 @@ void updateMovement(){
     if (pressedKeys.find(XK_w) != pressedKeys.end()) {
         player.vx += dy;
         player.vy += dx;
-        std::cout << "w" << std::endl;
     }
     if (pressedKeys.find(XK_s) != pressedKeys.end()) {
         player.vx -= dy;
         player.vy -= dx;
-        std::cout << "s" << std::endl;
     }
     if (pressedKeys.find(XK_a) != pressedKeys.end()) {
         player.vx += dx;
         player.vy -= dy;
-        std::cout << "a" << std::endl;
     }
     if (pressedKeys.find(XK_d) != pressedKeys.end()) {
         player.vx -= dx;
         player.vy += dy;
-        std::cout << "d" << std::endl;
     }
     // std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
     // std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
