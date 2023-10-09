@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cstdint>
 #include <unistd.h>
+#include <map>
 
 Display* display;
 Window root;
@@ -43,8 +44,13 @@ int typemap[res_X];                // wall type (if we want various textures etc
 
 // World map
 int map[map_size][map_size]; // world map
-
-
+std::map<int, int> colorMap = {
+    {0, 0x000000},
+    {1, 0x0000FF},
+    {2, 0x00FF00},
+    {4, 0xFF0000},
+    {8, 0xEEEEEE}
+};
 
 // Structure holding player data
 struct
@@ -110,7 +116,7 @@ void initializeX() {
     swa.event_mask = KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask;
     win = XCreateWindow(display, root, 0, 0, screenWidth, screenHeight, 0, DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen), CWEventMask, &swa);
 
-    XSetWindowBackground(display, win, WhitePixel(display, screen));
+    XSetWindowBackground(display, win, BlackPixel(display, screen));
 
     XFontStruct* font = XLoadQueryFont(display, "fixed");
 
@@ -163,7 +169,7 @@ void initGame(){
     map[3][3] = 1;
     map[3][4] = 1;
     map[3][5] = 1;
-    map[3][6] = 1;
+    map[3][6] = 0;
     map[4][2] = 1;
     map[5][2] = 1;
     map[5][4] = 1;
@@ -185,7 +191,7 @@ void initGame(){
     
 
     player.x = 6;
-    player.y = 5.5;
+    player.y = 6;
     player.ang_h = 450; // put the player somewhere in the middle, angle is in 0.1 degree increments
 
     for (int x = 0; x < 32; x++) // texture generation
@@ -195,7 +201,6 @@ void initGame(){
             textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 1 * 256;                                                   // large brick texture;last term is color (1=blue)
             textures[x + y * 32 + 2048] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                                   // large brick texture;last term is color (2=green)
         }
-
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 }
 
@@ -424,7 +429,7 @@ void displayText(Display* display, Window win, GC gc) {
     gc = XCreateGC(display, win, 0, NULL);
 
     // Set the foreground color (you can choose your own color)
-    XSetForeground(display, gc, WhitePixel(display, screen));
+    XSetForeground(display, gc, BlackPixel(display, screen));
 
 
     // Loop through the character buffer and draw each character on the window
@@ -434,11 +439,11 @@ void displayText(Display* display, Window win, GC gc) {
             char ch = char_buff[index];
             int color = color_buff[index];
             
-            XSetForeground(display, gc, WhitePixel(display, screen));
+            XSetForeground(display, gc, BlackPixel(display, screen));
             XFillRectangle(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, CHAR_WIDTH, CHAR_HEIGHT * 2);
 
             // Set the foreground color based on color_buff
-            XSetForeground(display, gc, color);
+            XSetForeground(display, gc, colorMap[color]);
 
             // Draw the character on the window
             
