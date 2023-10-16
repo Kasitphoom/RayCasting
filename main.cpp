@@ -441,11 +441,11 @@ void displayText(Display* display, Window win, GC gc) {
     for (int y = 0; y < res_Y; ++y) {
         for (int x = 0; x < res_X; ++x) {
             // int index = 0;
-            int index_correct = y * res_X + x;
+            // int index_correct = y * res_X + x;
 
             // int index = y * res_X + x;
             int index = calculate_index(x, y, res_X);
-            std::cout << "index: " << index << " " << "correct_index: " << index_correct << " " << "y: "<< y << " "<< "x: " << x << " " << "res_X: " << res_X << " " << std::endl;
+            // std::cout << "index: " << index << " " << "correct_index: " << index_correct << " " << "y: "<< y << " "<< "x: " << x << " " << "res_X: " << res_X << " " << std::endl;
 
             char ch = char_buff[index];
             int color = color_buff[index];
