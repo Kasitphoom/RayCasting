@@ -3,21 +3,16 @@
 .text
 .align 2
 
-
 _calculate_index:
     // Input arguments:
-    // x:    x0
-    // y:    x1
-    // res_X: x2
-    // index: x3 (pointer to int)
+    // x:    x0 (int)
+    // y:    x1 (int)
+    // res_X: x2 (int)
 
-    // Dereference the index pointer and store the result in x4
-    ldr x4, [x3]
+    mov x3, x0
 
     // Calculate index
-    mul x4, x1, x2  // Multiply y by res_X
-    add x4, x4, x0  // Add x to the result
+    mul x0, x1, x2  // Multiply y by res_X
+    add x0, x0, x3  // Add the original value of x to the result
 
-    // Store the calculated index back into memory
-    str x4, [x3]
     ret

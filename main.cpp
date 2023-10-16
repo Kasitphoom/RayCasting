@@ -8,9 +8,9 @@
 #include <unistd.h>
 #include <map>
 
-// extern "C" {
-//     void calculate_index(int y, int x, int res_X, int& index);
-// }
+extern "C" {
+    int calculate_index(int x, int y, int res_X);
+}
 
 Display* display;
 Window root;
@@ -440,11 +440,12 @@ void displayText(Display* display, Window win, GC gc) {
     // Loop through the character buffer and draw each character on the window
     for (int y = 0; y < res_Y; ++y) {
         for (int x = 0; x < res_X; ++x) {
-            // int index;
+            // int index = 0;
+            int index_correct = y * res_X + x;
 
-            int index = y * res_X + x;
-
-            // calculate_index(y, x, res_X, index);
+            // int index = y * res_X + x;
+            int index = calculate_index(x, y, res_X);
+            std::cout << "index: " << index << " " << "correct_index: " << index_correct << " " << "y: "<< y << " "<< "x: " << x << " " << "res_X: " << res_X << " " << std::endl;
 
             char ch = char_buff[index];
             int color = color_buff[index];

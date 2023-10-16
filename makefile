@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -fdiagnostics-color=always -g -v -I/opt/X11/include -std=c++11
+CXXFLAGS = -fdiagnostics-color=always -g -v -I/opt/X11/include -std=c++11 
 LDFLAGS = -L/opt/X11/lib -lX11
 
 # Directories
@@ -20,11 +20,11 @@ ASM_OBJ = $(ASMSRCS:.asm=.o)
 
 # Assembler and flags
 AS = as
-ASFLAGS = 
+ASFLAGS =
 
 # Build the target executable
 $(BUILD_DIR)/$(TARGET): $(OBJ) $(ASM_OBJ)
-	$(CXX) -o $@ $(ASM_OBJ) $(OBJ) $(LDFLAGS)
+	$(CXX) -o $@ $(ASM_OBJ) $(OBJ) $(LDFLAGS) -lc
 
 # Build rule for C++ source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
