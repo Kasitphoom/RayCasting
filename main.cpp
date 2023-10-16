@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <map>
 
+// extern "C" {
+//     void calculate_index(int y, int x, int res_X, int& index);
+// }
+
 Display* display;
 Window root;
 Window win;
@@ -436,7 +440,12 @@ void displayText(Display* display, Window win, GC gc) {
     // Loop through the character buffer and draw each character on the window
     for (int y = 0; y < res_Y; ++y) {
         for (int x = 0; x < res_X; ++x) {
+            // int index;
+
             int index = y * res_X + x;
+
+            // calculate_index(y, x, res_X, index);
+
             char ch = char_buff[index];
             int color = color_buff[index];
             
