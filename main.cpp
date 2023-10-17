@@ -10,6 +10,9 @@
 
 extern "C" {
     int calculate_index(int x, int y, int res_X);
+    int calculate_x_coordinate(int x, int CHAR_WIDTH);
+    int calculate_y_coordinate(int y, int CHAR_HEIGHT);
+    int calculate_rect_height(int CHAR_HEIGHT);
 }
 
 Display* display;
@@ -436,7 +439,6 @@ void displayText(Display* display, Window win, GC gc) {
     // Set the foreground color (you can choose your own color)
     XSetForeground(display, gc, BlackPixel(display, screen));
 
-
     // Loop through the character buffer and draw each character on the window
     for (int y = 0; y < res_Y; ++y) {
         for (int x = 0; x < res_X; ++x) {
@@ -445,20 +447,20 @@ void displayText(Display* display, Window win, GC gc) {
 
             // int index = y * res_X + x;
             int index = calculate_index(x, y, res_X);
-            // std::cout << "index: " << index << " " << "correct_index: " << index_correct << " " << "y: "<< y << " "<< "x: " << x << " " << "res_X: " << res_X << " " << std::endl;
+            //std::cout << "index: " << index << " " << "correct_index: " << index_correct << " " << "y: "<< y << " "<< "x: " << x << " " << "res_X: " << res_X << " " << std::endl;
 
             char ch = char_buff[index];
             int color = color_buff[index];
             
             XSetForeground(display, gc, BlackPixel(display, screen));
-            XFillRectangle(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, CHAR_WIDTH, CHAR_HEIGHT * 2);
+            XFillRectangle(display, win, gc, calculate_x_coordinate(x, CHAR_WIDTH), calculate_y_coordinate(y, CHAR_HEIGHT), CHAR_WIDTH, calculate_rect_height(CHAR_HEIGHT));
 
             // Set the foreground color based on color_buff
             XSetForeground(display, gc, colorMap[color]);
 
             // Draw the character on the window
             
-            XDrawString(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, &ch, 1);
+            XDrawString(display, win, gc, calculate_x_coordinate(x, CHAR_WIDTH), calculate_y_coordinate(y, CHAR_HEIGHT), &ch, 1);
         }
     }
 
