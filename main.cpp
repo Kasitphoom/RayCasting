@@ -8,6 +8,12 @@
 #include <unistd.h>
 #include <map>
 
+extern "C" {
+    int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
+    int getPlayerVAngel(int mouseY, int mouseInitY, int mouse_speed);
+    int checkAdd360deg(int playerAngle); 
+}
+
 Display* display;
 Window root;
 Window win;
@@ -363,15 +369,23 @@ void draw()
 
 void MouseEvent() // handles keyboard, mouse controls and player movement; windows-specific
 {
-    
     getCurrentMousePosition(display, mouseX, mouseY);
     // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
-    player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; // player horizontal angle
-    player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+    player.ang_h = getPlayerHAngel(mouseX, mouseInitX, mouse_speed);
+    //player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; //player horizontal angle
+    player.ang_v = getPlayerVAngel(mouseY, mouseInitY, mouse_speed);
+    //player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+
     horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
     
-    if (player.ang_h < 3600)
-        player.ang_h += 3600; // if player angle is less than 360 degrees, add 360 degrees so its never negative
+    int checkToAdd360deg;
+    // if (player.ang_h < 3600)
+    //     player.ang_h += 3600;
+    
+    // std::cout << "player.ang_h: " << player.ang_h << std::endl;
+    checkToAdd360deg = checkAdd360deg(player.ang_h);
+    std::cout << "checkToAdd360deg: " << checkToAdd360deg << std::endl;
+    player.ang_h += checkToAdd360deg; // if player angle is less than 360 degrees, add 360 degrees so its never negative
 }
 
 void handleEvent(){
