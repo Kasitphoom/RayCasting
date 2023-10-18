@@ -13,11 +13,21 @@ extern "C" {
     int calculate_x_coordinate(int x, int CHAR_WIDTH);
     int calculate_y_coordinate(int y, int CHAR_HEIGHT);
     int calculate_rect_height(int CHAR_HEIGHT);
+    int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
+    int getPlayerVAngel(int mouseY, int mouseInitY, int mouse_speed);
+    int checkAdd360deg(int playerAngle); 
+    int modul0(int x, int y);
+    int add0(int x, int y);
+    double multiply1(double x, double y);
+    //int compute_ang_dy(int playerAngle);
+    //void test();   
+    //double compute_dx(double accel, double* sintab, double ang_h);
+    // double compute_dy(double player_accel, double sintab[], double player_ang_h);
 }
 
 Display* display;
 Window root;
-Window win;
+Window win; 
 GC gc;
 int screen;
 
@@ -368,17 +378,38 @@ void draw()
     }                       // end of drawing
 }
 
+// void MouseEvent() // handles keyboard, mouse controls and player movement; windows-specific
+// {
+    
+//     getCurrentMousePosition(display, mouseX, mouseY);
+//     // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
+//     player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; // player horizontal angle
+//     player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+//     horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
+    
+//     if (player.ang_h < 3600)
+//         player.ang_h += 3600; // if player angle is less than 360 degrees, add 360 degrees so its never negative
+// }
+
 void MouseEvent() // handles keyboard, mouse controls and player movement; windows-specific
 {
-    
     getCurrentMousePosition(display, mouseX, mouseY);
     // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
-    player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; // player horizontal angle
-    player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+    player.ang_h = getPlayerHAngel(mouseX, mouseInitX, mouse_speed);
+    //player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; //player horizontal angle
+    player.ang_v = getPlayerVAngel(mouseY, mouseInitY, mouse_speed);
+    //player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+
     horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
     
-    if (player.ang_h < 3600)
-        player.ang_h += 3600; // if player angle is less than 360 degrees, add 360 degrees so its never negative
+    int checkToAdd360deg;
+    // if (player.ang_h < 3600)
+    //     player.ang_h += 3600;
+    
+    // std::cout << "player.ang_h: " << player.ang_h << std::endl;
+    checkToAdd360deg = checkAdd360deg(player.ang_h);
+    // std::cout << "checkToAdd360deg: " << checkToAdd360deg << std::endl;
+    player.ang_h += checkToAdd360deg; // if player angle is less than 360 degrees, add 360 degrees so its never negative
 }
 
 void handleEvent(){
@@ -400,9 +431,28 @@ void handleEvent(){
     }
 }
 
+int tracker = 0;
+
 void updateMovement(){
-    double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
-    double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
+    //double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
+    double dx = multiply1(player.accel, sintab[modul0((int)player.ang_h, 3600)]); 
+    double dy = multiply1(player.accel, sintab[modul0(add0((int)player.ang_h, 900), 3600)]); // y step in the direction player is looking
+
+    //debug
+    double dx_original = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
+    
+    if (dx != dx_original){
+        std::cout << "dx: " << dx << std::endl;
+        std::cout << "dx_original: " << dx_original << std::endl;
+        std::cout << "player.ang_h: " << player.ang_h << std::endl;
+        std::cout << "modul0((int)player.ang_h, 3600): " << modul0((int)player.ang_h, 3600) << std::endl;
+        std::cout << "(int)player.ang_h % 3600: " << (int)player.ang_h % 3600 << std::endl;
+        tracker++;
+        std::cout << "tracker: " << tracker << std::endl;
+    }
+
+    //double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
+    // double dy = compute_dy(player.accel, sintab, player.ang_h + 900);
 
     if (pressedKeys.find(XK_w) != pressedKeys.end()) {
         player.vx += dy;
@@ -473,6 +523,12 @@ void displayText(Display* display, Window win, GC gc) {
 }
 
 int main() {
+    // for (int i = 0; i < 1000; i++)
+    // {
+    //     std::cout << "sintab[" << i << "]: " << sintab[i] << std::endl;
+    // }
+    // std::cout << sintab[0] << std::endl;
+
     initializeX();
     initGame();
     
