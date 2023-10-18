@@ -56,7 +56,7 @@ std::map<int, int> colorMap = {
     {1, 0x0000FF},
     {2, 0x00FF00},
     {4, 0xFF0000},
-    {8, 0xEEEEEE}
+    {8, 0xEEEEEE} 
 };
 
 // Structure holding player data
@@ -207,7 +207,7 @@ void initGame(){
             textures[x + y * 32] = (12 - 8 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0)) + rand() % 2) + (4 + 4 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0))) * 256; // brick texture;last term is color (4=red, 8=gray)
             // textures[x + y * 32 + 1024] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) + rand() % 2 + (1 + 1 * ((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) * 256;
             textures[x + y * 32 + 2048] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) + rand() % 2 + (0 + 8 * (((y % 16) >= 8) ^ ((x % 16) >= 8))) * 256;                                                   // large brick texture;last term is color (1=blue)
-            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                                   // large brick texture;last term is color (2=green)
+            textures[x + y * 32 + 1024] = ((12) + rand() % 2) + (4 + 4*((6<=x) && (x<=27) && (y>=6))) * 256;
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 }
