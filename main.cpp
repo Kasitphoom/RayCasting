@@ -19,6 +19,7 @@ extern "C" {
     int modul0(int x, int y);
     int add0(int x, int y);
     double multiply1(double x, double y);
+    int compute_r_angle(float playerAngle, int xs, int res_X, int fov);
     //int compute_ang_dy(int playerAngle);
     //void test();   
     //double compute_dx(double accel, double* sintab, double ang_h);
@@ -228,9 +229,13 @@ void cast() // main ray casting function
 
     for (int xs = 0; xs < res_X; xs++) // go through all screen columns
     {
+        std::cout << "player.ang_h: " << player.ang_h << " " << "xs: " << xs << " " << "res_X" << res_X << "" << "fov: " << fov << std::endl;
         // ray angle = player angle +-half of FoV at screen edges;
         // add 360 degrees to avoid negative values when using lookup table later
-        int r_angle = (int)(3600 + player.ang_h + (xs - res_X / 2) * fov / res_X);
+        int r_angle_checker = (int)(3600 + player.ang_h + (xs - res_X / 2) * fov / res_X);
+        int r_angle = compute_r_angle(player.ang_h, xs, res_X, fov);
+        std::cout << "r_angle: " << r_angle << " " << "player.ang_h: " << player.ang_h << " " << "xs: " << xs << " " << "res_X" << res_X << "" << "fov: " << fov << std::endl;
+        std::cout << "r_angle_checker: " << r_angle_checker<< "player.ang_h: " << player.ang_h << " " << "xs: " << xs << " " << "res_X" << res_X << "" << "fov: " << fov << std::endl;
 
         // ray has a velocity of 1. Now we calculate its horizontal and vertical components;
         // horizontal uses cosine (e.g. sin(a+90 degrees))
