@@ -8,13 +8,17 @@
 #include <unistd.h>
 #include <map>
 
-extern "C" {
+extern "C"
+{
     int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
     int getPlayerVAngel(int mouseY, int mouseInitY, int mouse_speed);
-    int checkAdd360deg(int playerAngle); 
+    int checkAdd360deg(int playerAngle);
+    int modulo(int a, int b);
+    int pressWx(double dy, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
+    int pressWy(double dx, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
 }
 
-Display* display;
+Display *display;
 Window root;
 Window win;
 GC gc;
@@ -33,20 +37,20 @@ int CHAR_HEIGHT = 0;
 const int res_X = 120;           // resolution x
 const int res_Y = 60;            // resolution y; right-click on the window title, select properties and set the proper size
 const int fov = 600;             // field of view, in 0.1 degree increments (60 degrees)
-const int map_size = 8;         // square map size
+const int map_size = 8;          // square map size
 const double torad = M_PI / 180; // degrees to radians conversion factor
 double sintab[3600];             // lookup table of sine values, every 0.1 degree
 double fisheye[res_X];           // lookup table for fisheye correction, 1 value for every screen column
 const int mouse_speed = 100;     // mouse speed division
 
 // Buffers
-char char_buff[res_X * res_Y];     // screen character buffer
-uint16_t color_buff[res_X * res_Y];    // screen color buffer
-char char_grad[11] = " .-,=+*#%@"; // character gradient used to denote brightness
-int hmap[res_X];                   // map of heights of wall columns
-double lmap[res_X];                // map of light/brightness
-int tmap[res_X];                   // map of texture coordinates of wall columns
-int typemap[res_X];                // wall type (if we want various textures etc.)
+char char_buff[res_X * res_Y];      // screen character buffer
+uint16_t color_buff[res_X * res_Y]; // screen color buffer
+char char_grad[11] = " .-,=+*#%@";  // character gradient used to denote brightness
+int hmap[res_X];                    // map of heights of wall columns
+double lmap[res_X];                 // map of light/brightness
+int tmap[res_X];                    // map of texture coordinates of wall columns
+int typemap[res_X];                 // wall type (if we want various textures etc.)
 
 // World map
 int map[map_size][map_size]; // world map
@@ -55,8 +59,7 @@ std::map<int, int> colorMap = {
     {1, 0x0000FF},
     {2, 0x00FF00},
     {4, 0xFF0000},
-    {8, 0xEEEEEE}
-};
+    {8, 0xEEEEEE}};
 
 // Structure holding player data
 struct
@@ -78,42 +81,46 @@ int F_exit = 0; // turns to 1 when player presses esc.
 
 std::unordered_set<KeySym> pressedKeys;
 
-void getCurrentMousePosition(Display* display, int& mouseX, int& mouseY) {
+void getCurrentMousePosition(Display *display, int &mouseX, int &mouseY)
+{
     Window root, child;
     int rootX, rootY, winX, winY;
     unsigned int mask;
 
-    if (XQueryPointer(display, DefaultRootWindow(display), &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
+    if (XQueryPointer(display, DefaultRootWindow(display), &root, &child, &rootX, &rootY, &winX, &winY, &mask))
+    {
         mouseX = rootX;
         mouseY = rootY;
     }
 }
 
-void handleKeyPress(KeySym key) {
+void handleKeyPress(KeySym key)
+{
     // Handle key press here
-    
 }
 
-void handleKeyRelease(KeySym key) {
+void handleKeyRelease(KeySym key)
+{
     // Handle key release here
 }
 
-void closeX() {
+void closeX()
+{
     XCloseDisplay(display);
 }
 
-void initializeX() {
+void initializeX()
+{
     display = XOpenDisplay(nullptr);
-    if (!display) {
+    if (!display)
+    {
         std::cerr << "Error: Could not open X display." << std::endl;
         exit(1);
     }
 
-    
     screen = DefaultScreen(display);
     int screenWidth = XDisplayWidth(display, screen);
     int screenHeight = XDisplayHeight(display, screen);
-
 
     root = RootWindow(display, screen);
 
@@ -124,12 +131,13 @@ void initializeX() {
 
     XSetWindowBackground(display, win, BlackPixel(display, screen));
 
-    XFontStruct* font = XLoadQueryFont(display, "fixed");
+    XFontStruct *font = XLoadQueryFont(display, "fixed");
 
     CHAR_WIDTH = font->max_bounds.width;
     CHAR_HEIGHT = font->max_bounds.ascent;
 
-    if (!font) {
+    if (!font)
+    {
         std::cerr << "Error: Could not load font." << std::endl;
         XCloseDisplay(display);
         return;
@@ -139,7 +147,8 @@ void initializeX() {
     XFlush(display);
 }
 
-void initGame(){
+void initGame()
+{
     // precalculate sine values. Important, we add 0.001 to avoid even angles where sin=0 or cos=0
     for (int i = 0; i < 3600; i++)
         sintab[i] = sin((i + 0.001) * 0.1 * torad);
@@ -193,9 +202,6 @@ void initGame(){
             map[x][y] += 65536 * (2);
         }
 
-    
-    
-
     player.x = 6;
     player.y = 6.5;
     player.ang_h = 450; // put the player somewhere in the middle, angle is in 0.1 degree increments
@@ -205,8 +211,8 @@ void initGame(){
         {
             textures[x + y * 32] = (12 - 8 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0)) + rand() % 2) + (4 + 4 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0))) * 256; // brick texture;last term is color (4=red, 8=gray)
             // textures[x + y * 32 + 1024] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) + rand() % 2 + (1 + 1 * ((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) * 256;
-            textures[x + y * 32 + 2048] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) + rand() % 2 + (0 + 8 * (((y % 16) >= 8) ^ ((x % 16) >= 8))) * 256;                                                   // large brick texture;last term is color (1=blue)
-            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                                   // large brick texture;last term is color (2=green)
+            textures[x + y * 32 + 2048] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16))) + rand() % 2 + (0 + 8 * (((y % 16) >= 8) ^ ((x % 16) >= 8))) * 256; // large brick texture;last term is color (1=blue)
+            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                    // large brick texture;last term is color (2=green)
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 }
@@ -361,10 +367,9 @@ void draw()
             color_buff[offset] = color;
 
             offset += res_X; // go down by 1 row
-            
-        }   
-                        // end of column
-    }                       // end of drawing
+        }
+        // end of column
+    } // end of drawing
 }
 
 void MouseEvent() // handles keyboard, mouse controls and player movement; windows-specific
@@ -372,58 +377,71 @@ void MouseEvent() // handles keyboard, mouse controls and player movement; windo
     getCurrentMousePosition(display, mouseX, mouseY);
     // set player angles according to mouse position. 500 and 20 are arbitraty values that just work OK
     player.ang_h = getPlayerHAngel(mouseX, mouseInitX, mouse_speed);
-    //player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; //player horizontal angle
+    // player.ang_h = 500.0 * (mouseX - mouseInitX) / mouse_speed; //player horizontal angle
     player.ang_v = getPlayerVAngel(mouseY, mouseInitY, mouse_speed);
-    //player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
+    // player.ang_v = 20.0 * (mouseY - mouseInitY) / mouse_speed;  // player vertical angle
 
-    horizon_pos = (int)player.ang_v;                           // position of the horizon, for looking up/down 0=in the middle
-    
+    horizon_pos = (int)player.ang_v; // position of the horizon, for looking up/down 0=in the middle
+
     int checkToAdd360deg;
     // if (player.ang_h < 3600)
     //     player.ang_h += 3600;
-    
+
     // std::cout << "player.ang_h: " << player.ang_h << std::endl;
     checkToAdd360deg = checkAdd360deg(player.ang_h);
     std::cout << "checkToAdd360deg: " << checkToAdd360deg << std::endl;
     player.ang_h += checkToAdd360deg; // if player angle is less than 360 degrees, add 360 degrees so its never negative
 }
 
-void handleEvent(){
+void handleEvent()
+{
     XEvent event;
 
-    while(XPending(display)){
+    while (XPending(display))
+    {
         XNextEvent(display, &event);
-        if (event.type == KeyPress) {
+        if (event.type == KeyPress)
+        {
             KeySym key = XLookupKeysym(&event.xkey, 0);
             pressedKeys.insert(key);
-        } else if (event.type == KeyRelease) {
+        }
+        else if (event.type == KeyRelease)
+        {
             KeySym key = XLookupKeysym(&event.xkey, 0);
             pressedKeys.erase(key);
         }
 
-        if (event.type == MotionNotify){
+        if (event.type == MotionNotify)
+        {
             MouseEvent();
         }
     }
 }
 
-void updateMovement(){
+void updateMovement()
+{
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
 
-    if (pressedKeys.find(XK_w) != pressedKeys.end()) {
+    if (pressedKeys.find(XK_w) != pressedKeys.end())
+    {
         player.vx += dy;
         player.vy += dx;
     }
-    if (pressedKeys.find(XK_s) != pressedKeys.end()) {
+    // player.vx += pressWx(dy,pressedKeys.find(XK_w),pressedKeys.end());
+    // player.vy += pressWy(dx,pressedKeys.find(XK_w),pressedKeys.end());
+    if (pressedKeys.find(XK_s) != pressedKeys.end())
+    {
         player.vx -= dy;
         player.vy -= dx;
     }
-    if (pressedKeys.find(XK_a) != pressedKeys.end()) {
+    if (pressedKeys.find(XK_a) != pressedKeys.end())
+    {
         player.vx += dx;
         player.vy -= dy;
     }
-    if (pressedKeys.find(XK_d) != pressedKeys.end()) {
+    if (pressedKeys.find(XK_d) != pressedKeys.end())
+    {
         player.vx -= dx;
         player.vy += dy;
     }
@@ -439,21 +457,23 @@ void updateMovement(){
     player.vy *= (1 - player.friction);
 }
 
-void displayText(Display* display, Window win, GC gc) {
+void displayText(Display *display, Window win, GC gc)
+{
     // Create a graphics context (GC) for drawing
     gc = XCreateGC(display, win, 0, NULL);
 
     // Set the foreground color (you can choose your own color)
     XSetForeground(display, gc, BlackPixel(display, screen));
 
-
     // Loop through the character buffer and draw each character on the window
-    for (int y = 0; y < res_Y; ++y) {
-        for (int x = 0; x < res_X; ++x) {
+    for (int y = 0; y < res_Y; ++y)
+    {
+        for (int x = 0; x < res_X; ++x)
+        {
             int index = y * res_X + x;
             char ch = char_buff[index];
             int color = color_buff[index];
-            
+
             XSetForeground(display, gc, BlackPixel(display, screen));
             XFillRectangle(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, CHAR_WIDTH, CHAR_HEIGHT * 2);
 
@@ -461,11 +481,10 @@ void displayText(Display* display, Window win, GC gc) {
             XSetForeground(display, gc, colorMap[color]);
 
             // Draw the character on the window
-            
+
             XDrawString(display, win, gc, x * CHAR_WIDTH, y * CHAR_HEIGHT * 2, &ch, 1);
         }
     }
-
 
     // Flush the changes to the window
     XFlush(display);
@@ -474,22 +493,25 @@ void displayText(Display* display, Window win, GC gc) {
     XFreeGC(display, gc);
 }
 
-int main() {
-    initializeX();
-    initGame();
-    
-    XEvent event;
+int main()
+{   
+    std::cout << 11%4 << std::endl;
+    std::cout << modulo(11,4) << std::endl;
 
-    while (true) {
-        
-        
-        handleEvent();
-        updateMovement();
-        cast();
-        
-        draw();
-        displayText(display, win, gc);
-    }
+    // initializeX();
+    // initGame();
+
+    // XEvent event;
+
+    // while (true)
+    // {
+    //     handleEvent();
+    //     updateMovement();
+    //     cast();
+
+    //     draw();
+    //     displayText(display, win, gc);
+    // }
 
     return 0;
 }
