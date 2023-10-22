@@ -7,6 +7,12 @@
 #include <cstdint>
 #include <unistd.h>
 #include <map>
+// #include "include/asm_functions.h"
+
+extern "C" {
+    double calc_t(int r_ix, double r_x, double r_vx);
+    void lowest_time(double* r_y, double* t1, double* r_x, double* t2, int* r_ix, int* r_iy, double* r_vx, double* r_vy, int* r_ivx, int* r_ivy, double* r_dist);
+}
 
 Display* display;
 Window root;
@@ -71,6 +77,43 @@ int textures[32 * 32 * 3]; // array containing 3 32x32 textures (1024 pixels); f
 int F_exit = 0; // turns to 1 when player presses esc.
 
 std::unordered_set<KeySym> pressedKeys;
+
+// Printf address of every variable address
+void printAddress() {
+    std::cout << "display: " << &display << std::endl;
+    std::cout << "root: " << &root << std::endl;
+    std::cout << "win: " << &win << std::endl;
+    std::cout << "gc: " << &gc << std::endl;
+    std::cout << "screen: " << &screen << std::endl;
+    std::cout << "mouseX: " << &mouseX << std::endl;
+    std::cout << "mouseY: " << &mouseY << std::endl;
+    std::cout << "mouseInitX: " << &mouseInitX << std::endl;
+    std::cout << "mouseInitY: " << &mouseInitY << std::endl;
+    std::cout << "playerX: " << &playerX << std::endl;
+    std::cout << "playerY: " << &playerY << std::endl;
+    std::cout << "CHAR_WIDTH: " << &CHAR_WIDTH << std::endl;
+    std::cout << "CHAR_HEIGHT: " << &CHAR_HEIGHT << std::endl;
+    std::cout << "res_X: " << &res_X << std::endl;
+    std::cout << "res_Y: " << &res_Y << std::endl;
+    std::cout << "fov: " << &fov << std::endl;
+    std::cout << "map_size: " << &map_size << std::endl;
+    std::cout << "torad: " << &torad << std::endl;
+    std::cout << "sintab: " << &sintab << std::endl;
+    std::cout << "fisheye: " << &fisheye << std::endl;
+    std::cout << "mouse_speed: " << &mouse_speed << std::endl;
+    std::cout << "char_buff: " << &char_buff << std::endl;
+    std::cout << "color_buff: " << &color_buff << std::endl;
+    std::cout << "char_grad: " << &char_grad << std::endl;
+    std::cout << "hmap: " << &hmap << std::endl;
+    std::cout << "lmap: " << &lmap << std::endl;
+    std::cout << "tmap: " << &tmap << std::endl;
+    std::cout << "typemap: " << &typemap << std::endl;
+    std::cout << "map: " << &map << std::endl;
+    std::cout << "player: " << &player << std::endl;
+    std::cout << "horizon_pos: " << &horizon_pos << std::endl;
+    std::cout << "textures: " << &textures << std::endl;
+    std::cout << "F_exit: " << &F_exit << std::endl;
+}
 
 void getCurrentMousePosition(Display* display, int& mouseX, int& mouseY) {
     Window root, child;
@@ -192,7 +235,7 @@ void initGame(){
 
     player.x = 6;
     player.y = 6.5;
-    player.ang_h = 450; // put the player somewhere in the middle, angle is in 0.1 degree increments
+    player.ang_h = 0; // put the player somewhere in the middle, angle is in 0.1 degree increments
 
     for (int x = 0; x < 32; x++) // texture generation
         for (int y = 0; y < 32; y++)
@@ -245,11 +288,14 @@ void cast() // main ray casting function
             // distance to travel is the difference between double and int coordinate, +1 if moving to the right
             // example: x=0.3, map x=0, moving to the right, next grid is x=1 and distance is 1-0.3=0.7
             // to get time, divide the distance by speed in that direction
-            t1 = (r_ix - r_x + (r_vx > 0)) / r_vx;
+            // t1 = (r_ix - r_x + (r_vx > 0)) / r_vx;
+            t1 = calc_t(r_ix, r_x, r_vx);
             // the same for horizontal lines
-            t2 = (r_iy - r_y + (r_vy > 0)) / r_vy;
+            t2 = calc_t(r_iy, r_y, r_vy);
 
             // now we select the lower of two times, e.g. the closest intersection
+            lowest_time(&r_y, &t1, &r_x, &t2, &r_ix, &r_iy, &r_vx, &r_vy, &r_ivx, &r_ivy, &r_dist);
+            printf("The lowest time is [CPP] %p, %p, %p, %p, %p, %p, %p, %p, %p, %p\n", &r_y, &t1, &r_x, &t2, &r_ix, &r_iy, &r_vx, &r_vy, &r_ivx, &r_ivy, &r_dist);
             if (t1 < t2)
             {                                    // intersection with vertical line
                 r_y += r_vy * t1;                // update y position
@@ -264,6 +310,7 @@ void cast() // main ray casting function
                 r_y = r_iy - (r_vy < 0) * r_ivy;
                 r_dist += t2;
             }
+
         }
         // end of tracing; the distance is updated during steps, so there is no need to use slow pythagorean theory to calculate it
         // record wall height; it is inversely proportional to distance; apply fisheye correction term
@@ -461,9 +508,10 @@ void displayText(Display* display, Window win, GC gc) {
 }
 
 int main() {
+    
     initializeX();
     initGame();
-    
+    printAddress();
     XEvent event;
 
     while (true) {
