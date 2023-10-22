@@ -183,20 +183,27 @@ void initGame()
     //3 == fnaf floor
     //4 == exit
 
-    map[1][4] = 1;
-    map[1][6] = 4;
-    map[2][2] = 1;
-    map[2][6] = 4;
-    map[3][2] = 1;
-    map[3][3] = 1;
-    map[3][4] = 1;
-    map[3][5] = 0;
-    map[3][6] = 2;
-    map[4][2] = 1;
-    map[5][2] = 1;
-    map[5][4] = 1;
-    map[5][5] = 1;
-    map[6][5] = 1;
+    map[1][1] = 4; map[1][2] = 0; map[1][3] = 0; map[1][4] = 1; map[1][5] = 0; map[1][6] = 0;
+    map[2][1] = 1; map[2][2] = 1; map[2][3] = 0; map[2][4] = 1; map[2][5] = 0; map[2][6] = 0;
+    map[3][1] = 0; map[3][2] = 1; map[3][3] = 2; map[3][4] = 1; map[3][5] = 0; map[3][6] = 0;
+    map[4][1] = 0; map[4][2] = 0; map[4][3] = 0; map[4][4] = 0; map[4][5] = 0; map[4][6] = 0;
+    map[5][1] = 0; map[5][2] = 0; map[5][3] = 0; map[5][4] = 0; map[5][5] = 0; map[5][6] = 0;
+    map[6][1] = 0; map[6][2] = 0; map[6][3] = 0; map[6][4] = 0; map[6][5] = 0; map[6][6] = 0;
+
+    // map[1][4] = 1;
+    // map[1][6] = 4;
+    // map[2][2] = 1;
+    // map[2][6] = 4;
+    // map[3][2] = 1;
+    // map[3][3] = 1;
+    // map[3][4] = 1;
+    // map[3][5] = 0;
+    // map[3][6] = 2;
+    // map[4][2] = 1;
+    // map[5][2] = 1;
+    // map[5][4] = 1;
+    // map[5][5] = 1;
+    // map[6][5] = 1;
 
     // map[3][1] = 1;
     // map[2][4] = 2;
@@ -483,9 +490,9 @@ void updateMovement()
     if (map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 > 0)
         // std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 << std::endl;
         player.vy = -player.vy / 2; // collisions in y axis
-    else {
-        std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] << std::endl;
-    }
+    // else {
+    //     std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] << std::endl;
+    // }
     
     player.x += player.vx;          // update x,y values with x,y velocities
     player.y += player.vy;
