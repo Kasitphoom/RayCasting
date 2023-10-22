@@ -59,7 +59,9 @@ std::map<int, int> colorMap = {
     {1, 0x0000FF},
     {2, 0x00FF00},
     {4, 0xFF0000},
-    {8, 0xEEEEEE}};
+    {8, 0xEEEEEE},
+    {16, 0xFFD800}
+    };
 
 // Structure holding player data
 struct
@@ -74,7 +76,7 @@ struct
 int horizon_pos = 0; // position of the horizon, in characters; 0=middle of the screen
 
 // Textures
-int textures[32 * 32 * 3]; // array containing 3 32x32 textures (1024 pixels); first byte is character, second one is color
+int textures[32 * 32 * 4]; // array containing 3 32x32 textures (1024 pixels); first byte is character, second one is color
 
 // Global flags
 int F_exit = 0; // turns to 1 when player presses esc.
@@ -165,26 +167,31 @@ void initGame()
         map[map_size - 1][i] = 1;
     };
 
-    // int map = {
+    // map = {
     //     {1, 1, 1, 1, 1, 1, 1, 1},
-    //     {1, 0, 0, 0, 1, 0, 2, 1},
-    //     {1, 0, 1, 0, 0, 0, 2, 1},
-    //     {1, 0, 1, 1, 1, 1, 1, 1},
+    //     {1, 0, 0, 0, 1, 0, 4, 1},
+    //     {1, 0, 1, 0, 0, 0, 4, 1},
+    //     {1, 0, 1, 1, 1, 0, 2, 1},
     //     {1, 0, 1, 0, 0, 0, 0, 1},
     //     {1, 0, 1, 0, 1, 1, 0, 1},
     //     {1, 0, 0, 0, 0, 1, 0, 1},
     //     {1, 1, 1, 1, 1, 1, 1, 1}
     // };
 
+    //1 == brick
+    //2 == door
+    //3 == fnaf floor
+    //4 == exit
+
     map[1][4] = 1;
-    map[1][6] = 2;
+    map[1][6] = 4;
     map[2][2] = 1;
-    map[2][6] = 2;
+    map[2][6] = 4;
     map[3][2] = 1;
     map[3][3] = 1;
     map[3][4] = 1;
-    map[3][5] = 1;
-    map[3][6] = 0;
+    map[3][5] = 0;
+    map[3][6] = 2;
     map[4][2] = 1;
     map[5][2] = 1;
     map[5][4] = 1;
@@ -212,7 +219,12 @@ void initGame()
             textures[x + y * 32] = (12 - 8 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0)) + rand() % 2) + (4 + 4 * ((y % 6 == 0) || ((x + 4 * (y / 6)) % 16 == 0))) * 256; // brick texture;last term is color (4=red, 8=gray)
             // textures[x + y * 32 + 1024] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) + rand() % 2 + (1 + 1 * ((y > 16) ^ ((x + 4 * (y / 31)) < 16 ))) * 256;
             textures[x + y * 32 + 2048] = 8 - 4 * (((y > 16) ^ ((x + 4 * (y / 31)) < 16))) + rand() % 2 + (0 + 8 * (((y % 16) >= 8) ^ ((x % 16) >= 8))) * 256; // large brick texture;last term is color (1=blue)
-            textures[x + y * 32 + 1024] = 8 - 4 * ((y % 31 == 0) || ((x + 4 * (y / 31)) % 16 == 0)) + rand() % 2 + 2 * 256;                                    // large brick texture;last term is color (2=green)
+            textures[x + y * 32 + 1024] = ((12) + rand() % 2) + (16*(((x==0||x==31||(15<=x&&x<=16))||(2>=y||y>=30))||((x==12||x==19)&&(16<=y&&y<=17)))) * 256; //ending
+            // std::cout << x << ":  " << (15<=x<=16) << std::endl;
+            //                                                                            ^                             
+            //                                                                            |
+            //                                                                          Border                                          
+            textures[x + y * 32 + 3072] = ((12) + rand() % 2) + (4 + 4*((6<=x) && (x<=27) && (y>=6))) * 256;             
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 }
@@ -222,7 +234,8 @@ void cast() // main ray casting function
     // some speedup might be possible by declaring all variables beforehand here instead of inside the loops
 
     for (int xs = 0; xs < res_X; xs++) // go through all screen columns
-    {
+    {   
+        
         // ray angle = player angle +-half of FoV at screen edges;
         // add 360 degrees to avoid negative values when using lookup table later
         int r_angle = (int)(3600 + player.ang_h + (xs - res_X / 2) * fov / res_X);
@@ -246,6 +259,8 @@ void cast() // main ray casting function
         int r_iy = (int)r_y;
         double r_dist = 0; // travelled distance
         double t1, t2;     // time to intersect next vertical/horizontal grid line;
+
+        //printf("ADDR\nr_y: %p\nr_vy: %p\nr_iy: %p\nr_ivy: %p\nr_x: %p\nr_vx: %p\nr_ix: %p\nr_ivx: %p\nr_dist: %p\nt1: %p\nt2: %p\n", &r_y, &r_vy, &r_iy, &r_ivy, &r_x, &r_vx, &r_ix, &r_ivx, &r_dist, &t1, &t2);
 
         // ray tracing; we check only intersections with horizontal/vertical grid lines, so maximum of 2*map_size is possible
         for (int i = 0; i < 2 * map_size; i++)
@@ -389,7 +404,7 @@ void MouseEvent() // handles keyboard, mouse controls and player movement; windo
 
     // std::cout << "player.ang_h: " << player.ang_h << std::endl;
     checkToAdd360deg = checkAdd360deg(player.ang_h);
-    std::cout << "checkToAdd360deg: " << checkToAdd360deg << std::endl;
+    // std::cout << "checkToAdd360deg: " << checkToAdd360deg << std::endl;
     player.ang_h += checkToAdd360deg; // if player angle is less than 360 degrees, add 360 degrees so its never negative
 }
 
@@ -447,10 +462,31 @@ void updateMovement()
     }
     // std::cout << "vx, y" << (int)(player.x + 1 * player.vx) << " , " << (int)player.y << std::endl;
     // std::cout << "vy, x" << (int)(player.y + 1 * player.vy) << " , " << (int)player.x << std::endl;
+    if ((map[(int)(player.x + 2 * player.vx)][(int)player.y] % 256 == 4) || (map[(int)player.x][(int)(player.y + 2 * player.vy)] % 256 == 4)){
+        F_exit = 1;
+        std::cout << "You win!" << std::endl;
+        closeX();
+        exit(0);
+    }
+    int mapIDx = map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256;
+    if (map[(int)(player.x + 2 * player.vx)][(int)player.y] % 256 == 2){
+        map[(int)(player.x + 2 * player.vx)][(int)player.y] = 131584;//found door on x axis
+        // std::cout << "Yes Door" << std::endl;
+    }
+    if (map[(int)player.x][(int)(player.y + 2 * player.vy)] % 256 == 2) {
+        map[(int)player.x][(int)(player.y + 2 * player.vy)] = 131584; //found door on y axis
+        // std::cout << "Yes Door" << std::endl;
+    }
     if (map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256 > 0)
+        //std::cout << "X collision: "<< mapIDx << std::endl;
         player.vx = -player.vx / 2; // collisions in x axis - bounce back with half the velocity
     if (map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 > 0)
+        // std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 << std::endl;
         player.vy = -player.vy / 2; // collisions in y axis
+    else {
+        std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] << std::endl;
+    }
+    
     player.x += player.vx;          // update x,y values with x,y velocities
     player.y += player.vy;
     player.vx *= (1 - player.friction); // friction reduces velocity values
@@ -495,23 +531,26 @@ void displayText(Display *display, Window win, GC gc)
 
 int main()
 {   
-    std::cout << 11%4 << std::endl;
-    std::cout << modulo(11,4) << std::endl;
+    // std::cout << 11%4 << std::endl;
+    // std::cout << modulo(11,4) << std::endl;
+    // int x = 31;
+    // std::cout << (15<=x<=16) << std::endl;
+    
 
-    // initializeX();
-    // initGame();
+    initializeX();
+    initGame();
 
-    // XEvent event;
+    XEvent event;
 
-    // while (true)
-    // {
-    //     handleEvent();
-    //     updateMovement();
-    //     cast();
+    while (true)
+    {
+        handleEvent();
+        updateMovement();
+        cast();
 
-    //     draw();
-    //     displayText(display, win, gc);
-    // }
+        draw();
+        displayText(display, win, gc);
+    }
 
     return 0;
 }
