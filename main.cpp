@@ -12,6 +12,12 @@
 extern "C" {
     double calc_t(int r_ix, double r_x, double r_vx);
     void lowest_time(double* r_y, double* t1, double* r_x, double* t2, int* r_ix, int* r_iy, double* r_vx, double* r_vy, int* r_ivx, int* r_ivy, double* r_dist);
+    void update_r_y(double* r_y, double r_vy, double t1);
+    void update_r_ix(int* r_ix, int r_ivx);
+    double update_r_x(int r_ix, double r_vx, int r_ivx);
+    void update_r_dist(double* r_dist, double t1);
+    bool compare_t1_t2(double t1, double t2);
+    int hmap_calc(int* hmap, int res_Y, double r_dist, double fisheye);
 }
 
 Display* display;
@@ -288,33 +294,35 @@ void cast() // main ray casting function
             // distance to travel is the difference between double and int coordinate, +1 if moving to the right
             // example: x=0.3, map x=0, moving to the right, next grid is x=1 and distance is 1-0.3=0.7
             // to get time, divide the distance by speed in that direction
-            // t1 = (r_ix - r_x + (r_vx > 0)) / r_vx;
             t1 = calc_t(r_ix, r_x, r_vx);
             // the same for horizontal lines
             t2 = calc_t(r_iy, r_y, r_vy);
 
             // now we select the lower of two times, e.g. the closest intersection
-            lowest_time(&r_y, &t1, &r_x, &t2, &r_ix, &r_iy, &r_vx, &r_vy, &r_ivx, &r_ivy, &r_dist);
-            printf("The lowest time is [CPP] %p, %p, %p, %p, %p, %p, %p, %p, %p, %p\n", &r_y, &t1, &r_x, &t2, &r_ix, &r_iy, &r_vx, &r_vy, &r_ivx, &r_ivy, &r_dist);
-            if (t1 < t2)
+            if (compare_t1_t2(t1, t2))
             {                                    // intersection with vertical line
-                r_y += r_vy * t1;                // update y position
-                r_ix += r_ivx;                   // update x map position by +-1
-                r_x = r_ix - (r_vx < 0) * r_ivx; // we are on vertical line -> x coordinate = integer coordinate
-                r_dist += t1;                    // increment distance by velocity (=1) * time
+                // r_y += r_vy * t1;                // update y position
+                update_r_y(&r_y, r_vy, t1);
+                // r_ix += r_ivx;                   // update x map position by +-1
+                update_r_ix(&r_ix, r_ivx);
+                // r_x = r_ix - (r_vx < 0) * r_ivx; // we are on vertical line -> x coordinate = integer coordinate
+                r_x = update_r_x(r_ix, r_vx, r_ivx);
+                // r_dist += t1;                    // increment distance by velocity (=1) * time
+                update_r_dist(&r_dist, t1);
             }
             else
             { // intersection with horizontal line
-                r_x += r_vx * t2;
-                r_iy += r_ivy;
-                r_y = r_iy - (r_vy < 0) * r_ivy;
-                r_dist += t2;
+                
+                update_r_y(&r_x, r_vx, t2);
+                update_r_ix(&r_iy, r_ivy);
+                r_y = update_r_x(r_iy, r_vy, r_ivy);
+                update_r_dist(&r_dist, t2);
             }
 
         }
         // end of tracing; the distance is updated during steps, so there is no need to use slow pythagorean theory to calculate it
         // record wall height; it is inversely proportional to distance; apply fisheye correction term
-        hmap[xs] = (int)(res_Y / 2 / r_dist / fisheye[xs]);
+        hmap_calc(&hmap[xs], res_Y, r_dist, fisheye[xs]);
 
         // record the wall type; subtract 1 so map[x][y]=1 means wall type 0
         typemap[xs] = map[r_ix][r_iy] % 256 - 1;
@@ -323,7 +331,7 @@ void cast() // main ray casting function
         tmap[xs] = (t1 < t2) ? 32 * fabs(r_y - (int)(r_y)) : 32 * fabs(r_x - (int)(r_x));
 
         // wolfenstein 3D style lightning - Norts/south walls are brighter
-        lmap[xs] = (t1 < t2) ? 1 : 0.5;
+        lmap[xs] = compare_t1_t2(t1, t2) ? 1 : 0.5;
 
         // calculate brightness; it is proportional to height, 5.0 is arbitrary constant
         lmap[xs] *= 5.0 / res_Y * hmap[xs];
@@ -511,7 +519,7 @@ int main() {
     
     initializeX();
     initGame();
-    printAddress();
+    // printAddress();
     XEvent event;
 
     while (true) {
