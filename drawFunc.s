@@ -1,4 +1,5 @@
 .section .text
+
 .global calculateLM1
 @int lm1 = -(hmap[x] + horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] + horizon_pos)@
 calculateLM1:
@@ -48,7 +49,7 @@ calculateAngle:
     mov r4, #2       
     sdiv r4, r2, r4   @ r4 = res_X / 2
     sub r5, r1, r4   @ r5 = x - res_X / 2
-    mul r5, r5, r3   @ r5 = (x - res_X / 2) * fov
+    mul r5, r3, r5   @ r5 = (x - res_X / 2) * fov
     sdiv r5, r5, r2   @ r5 = (x - res_X / 2) * fov / res_X
     mov r4, #3600     @ r4 = 3600
     add r0, r0, r4   @ r0 = player.ang_h + 3600
@@ -56,6 +57,16 @@ calculateAngle:
 
     bx lr
 
+
+
+.global calculateAngleOffset
+@(ang + 900) % 3600
+calculateAngleOffset:
+    @ r0 = ang
+    add r0, r0, #900  @ r0 = ang + 900
+    and r0, r0, #3599 @ r0 = (ang + 900) % 3600
+
+    bx lr
 
 
 

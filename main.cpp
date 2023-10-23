@@ -21,6 +21,7 @@ extern "C"
     int calculateLM1(int hmapX, int horizonPos, int resY);
     int calculateLM2(int hmap_x, int horizon_pos, int res_Y);
     int calculateAngle(int player_ang_h, int x, int res_X, int fov);
+    double calculateAngleOffset(int ang);
     
 }
 
@@ -485,7 +486,11 @@ void draw()
         {
             //int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
             int ang = calculateAngle(player.ang_h, x, res_X, fov);
-            double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
+            // double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
+            int angleOffset = calculateAngleOffset(ang);
+            double dx = sintab[angleOffset];
+
+
             double dy = sintab[ang % 3600];
 
             if (y >= lm1 && y <= lm2) // are we drawing a wall?
