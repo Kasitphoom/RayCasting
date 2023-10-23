@@ -700,8 +700,6 @@ void displayText(Display* display, Window win, GC gc) {
 }
 
 int main() {
-
-
     // std::cout << modul0(-11, 50) << std::endl;
     // std::cout << -11 % 50 << std::endl;
     //std::cout << testlessthan(25) << std::endl;
