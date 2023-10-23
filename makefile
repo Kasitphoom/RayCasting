@@ -1,8 +1,8 @@
 CXX = g++
 CXXFLAGS = -fdiagnostics-color=always -g
 LDFLAGS = -lX11
-SRC_DIR = /home/pi/Proj
-BUILD_DIR = /home/pi/Proj
+SRC_DIR = /home/pi/Desktop/RayCasting
+BUILD_DIR = /home/pi/Desktop/RayCasting
 TARGET = main
 SRC = $(wildcard $(SRC_DIR)/$(TARGET).cpp)
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
