@@ -2,8 +2,8 @@ CXX = g++
 AS = as
 CXXFLAGS = -fdiagnostics-color=always -g
 LDFLAGS = -lX11
-SRC_DIR = /home/pi/Desktop/Phupa/Project/RayCasting
-BUILD_DIR = /home/pi/Desktop/Phupa/Project/RayCasting
+SRC_DIR = /home/pi/Desktop/RayCasting
+BUILD_DIR = /home/pi/Desktop/RayCasting
 TARGET = main
 CPP_SRC = $(wildcard $(SRC_DIR)/$(TARGET).cpp)
 AS_SRC = $(wildcard $(SRC_DIR)/*.s)
