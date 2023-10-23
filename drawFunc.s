@@ -140,6 +140,62 @@ handle_div_zero:
     mov r0, #0
     bx lr
 
+.global mul_double
+.global add_double
+.global sub_double
+.global div_double
+
+mul_double:
+    vmul.f64 d0, d0, d1
+    bx lr
+
+add_double:
+    vadd.f64 d0, d0, d1
+    bx lr
+
+sub_double:
+    vsub.f64 d0, d0, d1
+    bx lr
+
+div_double:
+    vdiv.f64 d0, d0, d1
+    bx lr
+
+.global absolute
+
+absolute:
+    cmp r0, #0
+    bge absolute_end
+    neg r0, r0
+
+absolute_end:
+    bx lr
+
+    @ int mul_int(int a, int b);
+    @ int add_int(int a, int b);
+    @ int sub_int(int a, int b);
+    @ int div_int(int a, int b);
+
+.global mul_int
+.global add_int
+.global sub_int
+.global div_int
+
+mul_int:
+    mul r0, r1, r0
+    bx lr
+
+add_int:
+    add r0, r1, r0
+    bx lr
+
+sub_int:
+    sub r0, r1, r0
+    bx lr
+
+div_int:
+    sdiv r0, r1, r0
+    bx lr
 
 
 

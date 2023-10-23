@@ -25,6 +25,17 @@ extern "C"
     int calculate_crdy(int y, int horizon_pos, int hmap);
     int calculate_crd(int crdx, int crdy, int typemap);
     int divide(int a, int b);
+    double mul_double(double a, double b);
+    double add_double(double a, double b);
+    double sub_double(double a, double b);
+    double div_double(double a, double b);
+    //double absolutef(double a);
+    int absolute(int a);
+    int add_int(int a, int b);
+    int sub_int(int a, int b);
+    int mul_int(int a, int b);
+    int div_int(int a, int b);
+
     
 }
 
@@ -506,32 +517,45 @@ void draw()
                 character = mod(textures[crd],256);                         // get texture pixel (1st byte)
                 color = divide(textures[crd],256);                             // get texture color (2nd byte)
 
-                character = character * lmap[x]; // multiply by the brightness value of light map
+                //character = character * lmap[x]; // multiply by the brightness value of light map
+                character = mul_double(character, lmap[x]);
             }
             else // floor/ceiling?
             {
                 // calculate distance to the floor pixel; y and horizon_pos are in pixels whole, 0.1 is added here to avoid division by 0
-                double dz = (res_Y / 2) / (fabs(y + horizon_pos) + 0.1) / fisheye[x];
+                //double dz = (res_Y / 2.0) / (fabs(y + horizon_pos) + 0.1) / fisheye[x];
+                double dz = div_double(div_double(div_double(res_Y,2.0) , add_double (absolute(add_double(y , horizon_pos)), 0.1)), fisheye[x]);
 
-                int crdx = (int)(1024 + 32.0 * (player.x + dx * dz)) % 32; // floor/ceiling texture coordinates
-                int crdy = (int)(1024 + 32.0 * (player.y + dy * dz)) % 32; // 1024 is here just to avoid negative numbers
-                int mcx = (int)(player.x + dx * dz) % map_size;            // floor/ceiling map coordinates
-                int mcy = (int)(player.y + dy * dz) % map_size;
-                int crd = crdx + 32 * crdy; // base texture coordinate
+                //int crdx = (int)(1024 + 32.0 * (player.x + dx * dz)) % 32; // floor/ceiling texture coordinates
+                int crdx = mod(add_double(1024 , mul_double(32.0 , add_double(player.x , mul_double(dx , dz)))), 32);
+                //int crdy = (int)(1024 + 32 * (player.y + dy * dz)) % 32; // 1024 is here just to avoid negative numbers
+                int crdy = mod(add_double(1024 , mul_double(32.0 , add_double(player.y , mul_double(dy , dz)))), 32);
+                //int mcx = (int)(player.x + dx * dz) % map_size;            // floor/ceiling map coordinates
+                int mcx = mod(add_double(player.x , mul_double(dx , dz)), map_size);
+                //int mcy = (int)(player.y + dy * dz) % map_size;
+                int mcy = mod(add_double(player.y , mul_double(dy , dz)), map_size);
+                //int crd = crdx + 32 * crdy; // base texture coordinate
+                int crd = calculate_crd(crdx, crdy, 0);
 
                 if (y > (-horizon_pos))
-                    crd += 1024 * ((map[mcx][mcy] / 256) % 256); // 2nd byte = floor type
+                    //crd += 1024 * ((map[mcx][mcy] / 256) % 256); // 2nd byte = floor type
+                    crd = add_double(crd, mul_double(1024, mod(divide(map[mcx][mcy], 256), 256)));
                 else
-                    crd += 1024 * ((map[mcx][mcy] / 65536) % 256); // 3rd byte = ceiling type
+                    //crd += 1024 * ((map[mcx][mcy] / 65536) % 256); // 3rd byte = ceiling type
+                    crd = add_double(crd, mul_double(1024, mod(divide(map[mcx][mcy], 65536), 256)));
 
-                character = textures[crd] % 256; // get texture pixel (1st byte)
-                color = textures[crd] / 256;     // get texture color (2nd byte)
+                //character = textures[crd] % 256; // get texture pixel (1st byte)
+                character = mod(textures[crd], 256);
+                //color = textures[crd] / 256;     // get texture color (2nd byte)
+                color = divide(textures[crd], 256);
 
                 // add dithering to avoid ugly edges
-                character += ((abs(y) % 2) + (abs(x) % 2));
+                //character += ((abs(y) % 2) + (abs(x) % 2));
+                character = add_double(character, add_double(mod(absolute(y), 2), mod(absolute(x), 2)));
 
                 // simple vertical gradient, use lower brightness than walls for better contrast
-                character *= (1.0 / res_Y * abs(y + horizon_pos));
+                //character *= (1.0 / res_Y * abs(y + horizon_pos));
+                character = mul_double(character, mul_double(div_double(1.0, res_Y), absolute(add_double(y, horizon_pos))));
             }
 
             // limit the value to the limits of character gradient (especially important if there are multiple brightness modifiers)
@@ -545,7 +569,8 @@ void draw()
             // save the color in color buffer
             color_buff[offset] = color;
 
-            offset += res_X; // go down by 1 row
+            //offset += res_X; // go down by 1 row
+            offset = add_double(offset, res_X);
         }
         // end of column
     } // end of drawing
