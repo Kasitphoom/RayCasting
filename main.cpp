@@ -22,7 +22,9 @@ extern "C"
     int calculateLM2(int hmap_x, int horizon_pos, int res_Y);
     int calculateAngle(int player_ang_h, int x, int res_X, int fov);
     int mod(int dividend, int divisor);
-    int calculate_crdy(int x, int y, int horizon_pos, int* hmap);
+    int calculate_crdy(int y, int horizon_pos, int hmap);
+    int calculate_crd(int crdx, int crdy, int typemap);
+    int divide(int a, int b);
     
 }
 
@@ -496,11 +498,13 @@ void draw()
             if (y >= lm1 && y <= lm2) // are we drawing a wall?
             {
                 int crdx = tmap[x];                                      // we get texture x coordinate from coordinate buffer made in tracing step
-                int crdy = 16 + (int)(14 * (y + horizon_pos) / hmap[x]); // texture y coordinate depends on y, horizon position and height
-                //int crdy = calculate_crdy(x, y, horizon_pos, hmap);
-                int crd = crdx + 32 * crdy + 1024 * typemap[x];          // calculate coordinate to use in 1-d texture buffer
-                character = textures[crd] % 256;                         // get texture pixel (1st byte)
-                color = textures[crd] / 256;                             // get texture color (2nd byte)
+                //int crdy = 16 + (14 * (y + horizon_pos) / hmap[x]); // texture y coordinate depends on y, horizon position and height
+                int crdy = calculate_crdy(y, horizon_pos, hmap[x]);
+                //int crd = crdx + 32 * crdy + 1024 * typemap[x];          // calculate coordinate to use in 1-d texture buffer
+                int crd = calculate_crd(crdx, crdy, typemap[x]);
+
+                character = mod(textures[crd],256);                         // get texture pixel (1st byte)
+                color = divide(textures[crd],256);                             // get texture color (2nd byte)
 
                 character = character * lmap[x]; // multiply by the brightness value of light map
             }

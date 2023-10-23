@@ -86,23 +86,62 @@ handle_div_by_zero:
     bx lr
 
 
-@ .global calculate_crdy
-@ @int crdy = 16 + (int)(14 * (y + horizon_pos) / hmap[x]);
-@ calculate_crdy:
-@     @ Input:  r0 = x
-@     @         r1 = y
-@     @         r2 = horizon_pos
-@     @         r3 = address of hmap (pointer)
-@     @ Output: r0 = crdy
+.global calculate_crdy
+@int crdy = 16 + (14 * (y + horizon_pos) / hmap[x]);
+calculate_crdy:
+    @ r0 = y
+    @ r1 = horizon_pos
+    @ r2 = hmap[x]
 
-@     ldr r4, [r3]           @ Load hmap[x] into r4 (assuming x is in r0)
-@     add r1, r1, r2         @ r1 = y + horizon_pos
-@     ldr r5, =14            @ Load the constant 14 into r5
-@     mul r1, r1, r5         @ r1 = 14 * (y + horizon_pos)
-@     add r0, r1, #16        @ r0 = 16 + (14 * (y + horizon_pos))
-@     sdiv r0, r0, r4        @ r0 = (16 + 14 * (y + horizon_pos)) / hmap[x]
+    mov r5, #14 @ r5 = 14
+    mov r6, #16 @ r6 = 16
+    add r3, r0, r1 @ r3 = y + horizon_pos
+    mul r3, r5, r3 @ r3 = 14 * (y + horizon_pos)
+    sdiv r3, r3, r2 @ r3 = 14 * (y + horizon_pos) / hmap[x]
+    add r0, r3, r6 @ r3 = 16 + 14 * (y + horizon_pos) / hmap[x]
 
-@     bx lr
+    bx lr
+
+.global calculate_crd
+@int crd = crdx + 32 * crdy + 1024 * typemap[x];
+calculate_crd:
+    @ r0 = crdx
+    @ r1 = crdy
+    @ r2 = typemap[x]
+
+    mov r5, #32        @ r5 = 32
+    mul r1, r5, r1     @ r1 = 32 * crdy
+    mov r6, #1024      @ r6 = 1024
+    mul r2, r6, r2     @ r2 = 1024 * typemap[x]
+    add r0, r1, r0     @ r0 = crdx + 32 * crdy
+    add r0, r2, r0     @ r0 = crdx + 32 * crdy + 1024 * typemap[x]
+
+
+    bx lr
+
+
+
+.global divide
+divide:
+    @ Input:  r0 = dividend
+    @          r1 = divisor
+    @ Output: r0 = quotient
+
+    cmp r1, #0          @ Check if divisor is zero
+    beq handle_div_zero
+
+    sdiv r0, r0, r1     @ r0 = dividend / divisor
+
+    bx lr
+
+handle_div_zero:
+    @ Handle division by zero as you see fit.
+    @ For simplicity, we'll just return 0.
+    mov r0, #0
+    bx lr
+
+
+
 
 
 
