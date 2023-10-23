@@ -34,33 +34,17 @@ false:
 .global modulo
 
 modulo:
-    mov r2, #0
-    //cmp r1, #0
-    //zero divisio error
-    //beq 
-    cmp r0, #0
-    blt absolute1
-    b moduloP2
+    cmp r1, #0
+    beq handle_div_by_zero
 
-absolute1:
-    neg r0, r0
-    mov r2, #1
-    b moduloP2
+    sdiv r2, r0, r1
+    mul r2, r2, r1
+    sub r0, r0, r2
 
-moduloP2:
-    sdiv r3, r0, r1
-    mul r4, r3, r1
-    cmp r2, #1
-    beq absolute2
-    b moduloP3
+    bx lr
 
-absolute2:
-    neg r0, r0
-    neg r4, r4
-    b moduloP3
-
-moduloP3:
-    sub r0, r0, r4
+handle_div_by_zero:
+    mov r0, #0
     bx lr
 
 

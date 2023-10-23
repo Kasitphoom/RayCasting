@@ -1,5 +1,5 @@
 CXX = g++
-AS = as
+AS = as -mfpu=neon-vfpv3
 CXXFLAGS = -fdiagnostics-color=always -g
 LDFLAGS = -lX11
 SRC_DIR = /home/pi/Desktop/Phupa/Project/RayCasting
