@@ -16,6 +16,12 @@ extern "C"
     int modulo(int a, int b);
     int pressWx(double dy, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
     int pressWy(double dx, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
+
+    //draw
+    int calculateLM1(int hmapX, int horizonPos, int resY);
+    int calculateLM2(int hmap_x, int horizon_pos, int res_Y);
+    int calculateAngle(int player_ang_h, int x, int res_X, int fov);
+    
 }
 
 Display *display;
@@ -379,18 +385,21 @@ void cast() // main ray casting function
         
         // ray angle = player angle +-half of FoV at screen edges;
         // add 360 degrees to avoid negative values when using lookup table later
-        int r_angle = (int)(3600 + player.ang_h + (xs - res_X / 2) * fov / res_X);
+
+        int r_angle = (int)(3600 + player.ang_h + (xs - res_X / 2) * fov / res_X); // USE ASM
 
         // ray has a velocity of 1. Now we calculate its horizontal and vertical components;
         // horizontal uses cosine (e.g. sin(a+90 degrees))
         // use %3600 to wrap the angles to 0-360 degree range
-        double r_vx = sintab[(r_angle + 900) % 3600];
+
+        double r_vx = sintab[(r_angle + 900) % 3600];  // USE ASM
+
         // we will ned an integer step to navigate the map; +1/-1 depending on sign of r_vx
-        int r_ivx = (r_vx > 0) ? 1 : -1;
+        int r_ivx = (r_vx > 0) ? 1 : -1; // USE ASM
 
         // now the same for vertical components
-        double r_vy = sintab[r_angle % 3600];
-        int r_ivy = (r_vy > 0) ? 1 : -1;
+        double r_vy = sintab[r_angle % 3600]; // USE ASM
+        int r_ivy = (r_vy > 0) ? 1 : -1; // USE ASM
 
         // initial position of the ray; precise and integer values
         // ray starts from player position; tracing is done on doubles (x,y), map checks on integers(ix,iy)
@@ -456,13 +465,16 @@ void cast() // main ray casting function
 
 void draw()
 {
-    // go through the screen, column by column
+    // go through the screen, column by column 
     for (int x = 0; x < res_X; x++)
     {
         // upper limit of the wall, capped at half vertical resolution (middle of the screen=0)
-        int lm1 = -(hmap[x] + horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] + horizon_pos);
+        //int lm1 = -(hmap[x] + horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] + horizon_pos);
+        int lm1 = -calculateLM1(hmap[x], horizon_pos, res_Y);
+
         // lower limit of the wall, capped at -half vertical resolution (middle of the screen=0)
-        int lm2 = (hmap[x] - horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] - horizon_pos);
+        //int lm2 = (hmap[x] - horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] - horizon_pos);
+        int lm2 = calculateLM2(hmap[x], horizon_pos, res_Y);
 
         // array offset for putting characters
         int offset = x;   // we draw on the column x
@@ -471,7 +483,8 @@ void draw()
 
         for (int y = -res_Y / 2; y < res_Y / 2; y++) // go along the whole screen column, drawing either wall or floor/ceiling
         {
-            int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
+            //int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
+            int ang = calculateAngle(player.ang_h, x, res_X, fov);
             double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
             double dy = sintab[ang % 3600];
 
