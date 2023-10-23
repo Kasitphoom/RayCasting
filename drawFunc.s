@@ -16,6 +16,7 @@ calculateLM1:
     movgt r0, r4 @ r3 = res_Y/2
 
     movle r0, r3 @ r3 = hmap[x] + horizon_pos
+    neg r0, r0
 
     bx lr
 
@@ -57,18 +58,51 @@ calculateAngle:
 
     bx lr
 
+.global mod
+mod:
+    @ Input: x0 = dividend (a)
+    @        x1 = divisor  (b)
+    @ Output: x0 = result (a % b)
+
+    @ Check if divisor is zero (division by zero is undefined)
+    beq handle_div_by_zero
 
 
-.global calculateAngleOffset
-@(ang + 900) % 3600
-calculateAngleOffset:
-    @ r0 = ang
-    add r0, r0, #900  @ r0 = ang + 900
-    and r0, r0, #3599 @ r0 = (ang + 900) % 3600
+    @ r = a / b
+    sdiv r2, r0, r1
+    
+    @ r = r * b
+    mul r2, r1, r2
+    
+    @ remainder = a - r
+    sub r0, r0, r2
+    
+    bx lr
 
+handle_div_by_zero:
+    @ Handle division by zero as you see fit.
+    @ For simplicity, we'll just return 0.
+    mov r0, #0
     bx lr
 
 
+@ .global calculate_crdy
+@ @int crdy = 16 + (int)(14 * (y + horizon_pos) / hmap[x]);
+@ calculate_crdy:
+@     @ Input:  r0 = x
+@     @         r1 = y
+@     @         r2 = horizon_pos
+@     @         r3 = address of hmap (pointer)
+@     @ Output: r0 = crdy
+
+@     ldr r4, [r3]           @ Load hmap[x] into r4 (assuming x is in r0)
+@     add r1, r1, r2         @ r1 = y + horizon_pos
+@     ldr r5, =14            @ Load the constant 14 into r5
+@     mul r1, r1, r5         @ r1 = 14 * (y + horizon_pos)
+@     add r0, r1, #16        @ r0 = 16 + (14 * (y + horizon_pos))
+@     sdiv r0, r0, r4        @ r0 = (16 + 14 * (y + horizon_pos)) / hmap[x]
+
+@     bx lr
 
 
 
