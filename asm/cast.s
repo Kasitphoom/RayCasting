@@ -2,7 +2,6 @@
 
 .text
 .global _compute_r_angle
-
 .align 4
 
 _compute_r_angle:

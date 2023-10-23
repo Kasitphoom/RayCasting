@@ -21,7 +21,7 @@ OBJ = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 ASM_OBJ = $(patsubst $(ASM_DIR)/%.s,$(BUILD_DIR)/%.o,$(ASMSRCS))
 
 # Assembler and flags
-AS = as
+AS = as -mfpu=neon-vfpv3
 ASFLAGS =
 
 # Build the target executable
@@ -46,4 +46,3 @@ clean:
 
 # Phony target
 .PHONY: clean
-
