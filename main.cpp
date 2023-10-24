@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <unistd.h>
 #include <map>
+#include <chrono> // for high_resolution_clock and duration_cast
+#include <thread> // for sleep_for
+#include <ctime>
 
 extern "C"
 {
@@ -75,14 +78,21 @@ int typemap[res_X];                 // wall type (if we want various textures et
 // World map
 int map[map_size][map_size]; // world map
 std::map<int, int> colorMap = {
-    {0, 0x000000},
-    {1, 0x0000FF},
-    {2, 0x00FF00},
-    {3, 0x00000000},
-    {4, 0xFF0000},
-    {5, 0xFFD800},
-    {8, 0xEEEEEE},
+    {0, 0x000000}, // black
+    {1, 0x0000FF}, // blue
+    {2, 0x00FF00}, // green
+    {3, 0x00000000}, // red
+    {4, 0xFF0000}, // yellow
+    {5, 0xFFD800}, // orange
+    {8, 0xEEEEEE}, // white
 };
+
+char timeLable[7] = "Time: ";
+std::string timerText = "00:00";
+int timerDuration = 2 * 60;
+
+// Initialize variables for minutes and seconds
+int minutes, seconds;
 
 int skull120[120*60]={
 
@@ -842,6 +852,59 @@ void displayText(Display *display, Window win, GC gc)
 //     XFreeGC(display, gc);
 // }
 
+void setTimer() {
+    while (timerDuration > 0) {
+        // Calculate minutes and seconds
+        minutes = timerDuration / 60;
+        seconds = timerDuration % 60;
+
+        // Display the time in "mm:ss" format
+        //std::cout << minutes << ":";
+        // if (seconds < 10) {
+        //     std::cout << "0"; // Add leading zero for single-digit seconds
+        // }
+        //std::cout << seconds << std::endl;
+        timerText = (seconds < 10) ? std::to_string(minutes) + ":0" + std::to_string(seconds) : std::to_string(minutes) + ":" + std::to_string(seconds);
+        //std::cout << timerText << std::endl;
+
+        // Decrement the timer duration
+        --timerDuration;
+
+        // // Sleep for 1 second
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    GameState = 1;
+}
+
+void displayTimer() {
+    for (int i = 0; i < 6; i++)
+    {
+        int entityX = res_X - 20 + i;
+        int entityY = -29;
+
+        if (entityX >= 0 && entityX < res_X && entityY >= -res_Y / 2 && entityY < res_Y / 2)
+        {
+            // The entity is within the screen bounds, so draw a yellow dot at its position
+            int offset = entityX + (entityY + res_Y / 2) * res_X;
+            char_buff[offset] = timeLable[i]; // Character for a dot
+            color_buff[offset] = 5;  // Color value for yellow
+        }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        int entityX = res_X - 14 + i;
+        int entityY = -29;
+
+        if (entityX >= 0 && entityX < res_X && entityY >= -res_Y / 2 && entityY < res_Y / 2)
+        {
+            // The entity is within the screen bounds, so draw a yellow dot at its position
+            int offset = entityX + (entityY + res_Y / 2) * res_X;
+            char_buff[offset] = timerText[i]; // Character for a dot
+            color_buff[offset] = 5;  // Color value for yellow
+        }
+    }
+}
+
 int main()
 {
     // std::cout << 11%4 << std::endl;
@@ -852,11 +915,13 @@ int main()
 
     initializeX();
     initGame();
+    std::thread timerThread(setTimer);
 
     XEvent event;
 
     while (true)
     {
+
         handleEvent();
         updateMovement();
         cast();
@@ -864,16 +929,8 @@ int main()
         if (GameState == 0)
         {
             draw();
-            int entityX = res_X - 2;
-            int entityY = 2;
-
-            if (entityX >= 0 && entityX < res_X && entityY >= -res_Y / 2 && entityY < res_Y / 2)
-            {
-                // The entity is within the screen bounds, so draw a yellow dot at its position
-                int offset = entityX + (entityY + res_Y / 2) * res_X;
-                char_buff[offset] = 'F'; // Character for a dot
-                color_buff[offset] = 1;  // Color value for yellow
-            }
+            displayTimer();
+            
         }
         else if (GameState == 1)
         {
@@ -881,6 +938,7 @@ int main()
         }
         displayText(display, win, gc);
     }
+    timerThread.join();
 
     return 0;
 }

@@ -1,7 +1,7 @@
 CXX = g++
 AS = as -mfpu=neon-vfpv3
 CXXFLAGS = -fdiagnostics-color=always -g
-LDFLAGS = -lX11
+LDFLAGS = -lX11 -pthread
 SRC_DIR = /home/pi/Phong/asm/RayCasting
 BUILD_DIR = /home/pi/Phong/asm/RayCasting
 TARGET = main
