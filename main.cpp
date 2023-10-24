@@ -737,21 +737,33 @@ void updateMovement()
     // if (map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256 > 0)
     //     player.vx = -player.vx / 2; // collisions in x axis - bounce back with half the velocity
 
-    std::cout << bgt(modulo(map[(int)(add_double(player.x , mul_double(1 , player.vx)))][(int)player.y] , 256), 0) << std::endl;
-    if (modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) > 0) {
+    //std::cout << "Result 1: "<< modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256)<< std::endl;
+    //std::cout << "Result 1:" << greaterThan(modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) , 0) << std::endl;
+    //if (modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) > 0) {
         // std::cout << "X collision: "<< mapIDx << std::endl;
-        player.vx = div_double(-player.vx , 2.0); // collisions in x axis - bounce back with half the velocity
-        std::cout << "Actual: "<< 1 << std::endl;
-    } else {
-        std::cout << "Actual: "<< 0 << std::endl;
-    }
+        //double conditionX = greaterThan(modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) , 0);
+        //player.vx = div_double(-player.vx , 1.0*conditionX +1); // collisions in x axis - bounce back with half the velocity
+        //std::cout << "Actual: "<< 1 << std::endl;
+    //} //else {
+        //std::cout << "Actual: "<< 0 << std::endl;
+    //}
+    double conditionX = greaterThan(modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) , 0);
+    // std::cout << "conditionX: "<< conditionX << std::endl;
+    // std::cout << "value: " << div_double(-player.vx , (double)(1.0*conditionX + 1.0)) << std::endl;
+    // player.vx = div_double((1-(conditionX*2))*player.vx , (double)(1.0*conditionX + 1.0)); // collisions in x axis - bounce back with half the velocity
+    player.vx = div_double(mul_double(sub_double(1,mul_double(conditionX,2.0)),player.vx) , (double)(add_double(mul_double(1.0,conditionX) , 1.0))); // collisions in x axis - bounce back with half the velocity
 
-    if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) > 0)
+    
+    //std::cout << "Result 2: "<< modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) << std::endl;
+    //std::cout << "Result 2:" << greaterThan(modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) , 0) << std::endl;
+    //if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) > 0)
         // std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 << std::endl;
-        player.vy = div_double(-player.vy , 2.0); // collisions in y axis
+        //player.vy = div_double(-player.vy , 2.0); // collisions in y axis
     // else {
     //     std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] << std::endl;
     // }
+    double conditionY = greaterThan(modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) , 0);
+    player.vy = div_double(mul_double(sub_double(1,mul_double(conditionY,2.0)),player.vy) , (double)(add_double(mul_double(1.0,conditionY) , 1.0))); // collisions in x axis - bounce back with half the velocity
 
     player.x = add_double(player.x,player.vx); // update x,y values with x,y velocities -> original: player.x += player.vx;
     player.y = add_double(player.y,player.vy); // original: player.y += player.vy;
