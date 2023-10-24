@@ -8,6 +8,11 @@
 #include <unistd.h>
 #include <map>
 
+int findid(int x, int y, int index){
+    return (32*(y-1)+(x-1)) + index;
+}
+
+
 extern "C"
 {
     int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
@@ -62,6 +67,8 @@ double fisheye[res_X];           // lookup table for fisheye correction, 1 value
 const int mouse_speed = 100;     // mouse speed division
 
 int GameState = 0;
+int lever = 0;
+int win_con = 3;
 
 // Buffers
 char char_buff[res_X * res_Y];      // screen character buffer
@@ -81,6 +88,8 @@ std::map<int, int> colorMap = {
     {3, 0x00000000},
     {4, 0xFF0000},
     {5, 0xFFD800},
+    {6, 0xC2C5CC},//gray
+    {7, 0x9B673C},//brown
     {8, 0xEEEEEE},
 };
 
@@ -150,6 +159,26 @@ int skull120[120*60]={
 
 };
 
+int texture_16[16 * 16] = {
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 0, 5, 5, 5, 0, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 0, 5, 5, 0, 5, 5, 0, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 0, 5, 0, 3, 0, 5, 0, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 0, 5, 5, 0, 5, 5, 0, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 0, 5, 5, 5, 0, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 0, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 0, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 0, 0, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 5, 5, 0, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 0, 0, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 0, 5, 5, 5, 0, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 3, 3, 3, 3, 3, 3, 
+
+};
+
 // Structure holding player data
 struct
 {
@@ -160,20 +189,13 @@ struct
     double accel = 0.01;   // acceleration coefficient for movement
 } player;
 
-struct Sprite // All variables per sprite
-{
-    int type;      // static, key, enemy
-    int state;     // on off
-    int map;       // texture to show
-    float x, y, z; // position
-};
 
-Sprite sp[4];
+
 
 int horizon_pos = 0; // position of the horizon, in characters; 0=middle of the screen
 
 // Textures
-int textures[32 * 32 * 4]; // array containing 3 32x32 textures (1024 pixels); first byte is character, second one is color
+int textures[32 * 32 * 7]; // array containing 3 32x32 textures (1024 pixels); first byte is character, second one is color
 
 // Global flags
 int F_exit = 0; // turns to 1 when player presses esc.
@@ -276,46 +298,18 @@ void initGame()
     // };
 
     // 1 == brick
-    // 2 == door
+    // 2 == locked door
     // 3 == fnaf floor
     // 4 == exit
+    // 5 == lever
+    // 7 == door
 
-    map[1][1] = 4;
-    map[1][2] = 0;
-    map[1][3] = 0;
-    map[1][4] = 1;
-    map[1][5] = 0;
-    map[1][6] = 0;
-    map[2][1] = 1;
-    map[2][2] = 1;
-    map[2][3] = 0;
-    map[2][4] = 1;
-    map[2][5] = 0;
-    map[2][6] = 0;
-    map[3][1] = 0;
-    map[3][2] = 1;
-    map[3][3] = 2;
-    map[3][4] = 1;
-    map[3][5] = 0;
-    map[3][6] = 0;
-    map[4][1] = 0;
-    map[4][2] = 0;
-    map[4][3] = 0;
-    map[4][4] = 0;
-    map[4][5] = 0;
-    map[4][6] = 0;
-    map[5][1] = 0;
-    map[5][2] = 0;
-    map[5][3] = 0;
-    map[5][4] = 0;
-    map[5][5] = 0;
-    map[5][6] = 0;
-    map[6][1] = 0;
-    map[6][2] = 0;
-    map[6][3] = 0;
-    map[6][4] = 0;
-    map[6][5] = 0;
-    map[6][6] = 0;
+    map[1][1] = 4; map[1][2] = 0; map[1][3] = 0; map[1][4] = 1; map[1][5] = 0; map[1][6] = 0; 
+    map[2][1] = 1; map[2][2] = 1; map[2][3] = 0; map[2][4] = 1; map[2][5] = 7; map[2][6] = 0;
+    map[3][1] = 0; map[3][2] = 1; map[3][3] = 2; map[3][4] = 1; map[3][5] = 0; map[3][6] = 5;
+    map[4][1] = 0; map[4][2] = 0; map[4][3] = 0; map[4][4] = 0; map[4][5] = 0; map[4][6] = 0;
+    map[5][1] = 0; map[5][2] = 5; map[5][3] = 0; map[5][4] = 5; map[5][5] = 0; map[5][6] = 0;
+    map[6][1] = 0; map[6][2] = 0; map[6][3] = 0; map[6][4] = 0; map[6][5] = 0; map[6][6] = 0;
 
     // map[1][4] = 1;
     // map[1][6] = 4;
@@ -363,7 +357,7 @@ void initGame()
             textures[add_int(add_int(x, mul_int(y, 32)) , 2048)] = add_int(sub_int(8, mul_int(4, logicalXOR(greaterThan(y, 16), lessThan(add_int(x, mul_int(4, div_int(y, 31))), 16)))), add_int(modulo(rand(), 2), mul_int(add_int(0, mul_int(8, logicalXOR(GTE(modulo(y, 16), 8), GTE(modulo(x, 16), 8)))), 256))); // large brick texture;last term is color (1=blue)
 
 
-            //textures[x + y * 32 + 1024] = (12 + rand() % 2) + (16*(((x==0||x==31||(15<=x&&x<=16))(2>=y||y>=30))((x==12||x==19)&&(16<=y&&y<=17)))) * 256; //ending            
+            //textures[x + y * 32 + 1024] = (12 + rand() % 2) + (5*(((x==0||x==31||(15<=x&&x<=16))(2>=y||y>=30))((x==12||x==19)&&(16<=y&&y<=17)))) * 256; //ending            
             bool condition1 = logicalOR(compareZero(x), EQ(x, 31));
             bool condition2 = logicalAND(LTE(15, x), LTE(x, 16));
             bool condition3 = logicalOR(GTE(2, y), GTE(y, 30));
@@ -372,23 +366,443 @@ void initGame()
             //textures[x + y * 32 + 1024] = (12 + modulo(rand(), 2)) + (5 * logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) * 256;
             textures[add_int(x , add_int(mul_int(y , 32) , 1024))] =  add_int(( add_int(12,modulo(rand(), 2)) ),mul_int(( mul_int(5,logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) ),256))   ;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
-            
+            int color_check = ( mul_int(5,logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) );
+            if (color_check==0)
+                color_check = 7;
+            textures[add_int(x , add_int(mul_int(y , 32) , 6144))] =  add_int(( add_int(12,modulo(rand(), 2)) ),mul_int(color_check,256));
 
                                         
             //textures[x + y * 32 + 3072] = (12 + rand() % 2) + (4 + 4*((6<=x) && (x<=27) && (y>=6))) * 256;         
             //textures[x + y * 32 + 3072] = (12 + modulo(rand(), 2)) + (4 + 4*(logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) * 256;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
             textures[add_int(x, mul_int(y, 32)) + 3072] = add_int(add_int(12, modulo(rand(), 2)), mul_int(add_int(4, mul_int(4, logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) , 256));
+
+
+            textures[add_int(add_int(x, mul_int(y, 32)), 4096)] = add_int(sub_int(12, mul_int(8, logicalOR(compareZero(modulo(y, 6)), compareZero(modulo(add_int(x, mul_int(4, div_int(y, 6))), 16))))), mul_int(add_int(4, mul_int(4, logicalOR(compareZero(modulo(y, 6)), compareZero(modulo(add_int(x, mul_int(4, div_int(y, 6))), 16))))), 256));
+
+            textures[add_int(add_int(x, mul_int(y, 32)), 5120)] = add_int(sub_int(12, mul_int(8, logicalOR(compareZero(modulo(y, 6)), compareZero(modulo(add_int(x, mul_int(4, div_int(y, 6))), 16))))), mul_int(add_int(4, mul_int(4, logicalOR(compareZero(modulo(y, 6)), compareZero(modulo(add_int(x, mul_int(4, div_int(y, 6))), 16))))), 256));
         }
+//         int map[map_size][map_size]; // world map
+// std::map<int, int> colorMap = {
+//     {0, 0x000000},
+//     {1, 0x0000FF},
+//     {2, 0x00FF00},
+//     {3, 0x00000000},
+//     {4, 0xFF0000},
+//     {5, 0xFFD800},
+//     {6, 0xC2C5CC},//gray
+//     {7, 0x9B673C},//brown
+//     {8, 0xEEEEEE},
+// };
+        int gray = 6;
+        int brown = 7;
+        int black = 0;
+        int white = 8;
+
+        
+        textures[findid(11,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(12,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(12,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(13,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(13,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(13,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(13,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(14,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(14,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(14,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(14,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(15,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(15,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(15,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(15,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(16,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(16,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(16,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(16,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(17,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(17,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(17,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(17,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(18,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(18,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(18,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(18,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(19,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(19,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(19,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(19,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(20,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(20,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(20,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(20,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(21,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(21,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(22,8,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,9,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,10,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,11,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,12,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,13,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,14,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,15,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,16,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,17,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,18,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,19,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,20,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,21,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,22,4096)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+
+        
+        
+
+
+
+
+
+
+
+
+
+
+        textures[findid(11,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(11,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(12,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(12,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(12,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(13,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(13,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(13,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(13,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(13,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(14,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(14,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(14,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(14,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(14,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(15,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(15,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(15,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(15,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(15,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(16,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(16,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(16,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(16,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(16,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(16,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(17,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(17,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(white , 256));
+        textures[findid(17,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(17,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(17,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(17,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(18,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(18,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(18,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(18,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(18,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(19,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(19,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(19,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(19,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(19,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(20,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(20,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(20,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(brown , 256));
+        textures[findid(20,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(20,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(21,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(21,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(gray , 256));
+        textures[findid(21,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+        textures[findid(22,8,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,9,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,10,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,11,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,12,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,13,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,14,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,15,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,16,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,17,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,18,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,19,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,20,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,21,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+        textures[findid(22,22,5120)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(black , 256));
+
+
+
+
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 
-    // initialize sprite1
-    sp[0].type = 1;
-    sp[0].state = 1;
-    sp[0].map = 0;
-    sp[0].x = 1.5 * 32;
-    sp[0].y = 1.5 * 32;
-    sp[0].z = 0;
+
 }
 
 void cast() // main ray casting function
@@ -548,12 +962,12 @@ void draw()
         }
         // end of column
     } // end of drawing
+
 }
 
 // draw screen
 
-void drawScreen()
-{
+void drawScreen(){
     // draw a skull on the middle of the screen nothing else
     for (int x = 0; x < res_X; x++)
     {
@@ -709,7 +1123,6 @@ void updateMovement()
         // closeX();
         // exit(0);
     }
-    
 
     // if (map[(int)(player.x + 2 * player.vx)][(int)player.y] % 256 == 2)
     // {
@@ -717,7 +1130,33 @@ void updateMovement()
     //     // std::cout << "Yes Door" << std::endl;
     // }
 
-    if (modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 2)
+    if (logicalAND(modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 2, GTE(lever, win_con)))
+    {
+        map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] = 131584; // found door on x axis
+        // std::cout << "Yes Door" << std::endl;
+    }
+
+    if (logicalAND(modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] , 256) == 2, GTE(lever, win_con)))
+    {
+        map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131584; // found door on y axis
+        // std::cout << "Yes Door" << std::endl;
+    }
+
+    if (modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 5)
+    {   
+        lever++;
+        map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] = 131590; // found door on x axis
+        // std::cout << "Yes Door" << std::endl;
+    }
+
+    if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] , 256) == 5)
+    {
+        lever++;
+        map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131590; // found door on y axis
+        // std::cout << "Yes Door" << std::endl;
+    }
+
+    if (modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 7)
     {
         map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] = 131584; // found door on x axis
         // std::cout << "Yes Door" << std::endl;
@@ -727,7 +1166,7 @@ void updateMovement()
     //     map[(int)player.x][(int)(player.y + 2 * player.vy)] = 131584; // found door on y axis
     //     // std::cout << "Yes Door" << std::endl;
     // }
-    if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] , 256) == 2)
+    if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] , 256) == 7)
     {
         map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131584; // found door on y axis
         // std::cout << "Yes Door" << std::endl;
@@ -737,18 +1176,17 @@ void updateMovement()
     // if (map[(int)(player.x + 1 * player.vx)][(int)player.y] % 256 > 0)
     //     player.vx = -player.vx / 2; // collisions in x axis - bounce back with half the velocity
 
-    std::cout << bgt(modulo(map[(int)(add_double(player.x , mul_double(1 , player.vx)))][(int)player.y] , 256), 0) << std::endl;
-    if (modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) > 0) {
-        // std::cout << "X collision: "<< mapIDx << std::endl;
+    // std::cout << bgt(modulo(map[(int)(add_double(player.x , mul_double(1 , player.vx)))][(int)player.y] , 256), 0) << std::endl;
+    if (modulo(map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y], 256) > 0) 
+        // std::cout << "X collision: "<< mapIDx << std::endl;D W AD
         player.vx = div_double(-player.vx , 2.0); // collisions in x axis - bounce back with half the velocity
-        std::cout << "Actual: "<< 1 << std::endl;
-    } else {
-        std::cout << "Actual: "<< 0 << std::endl;
-    }
+        std::cout << "X collision: "<<  map[(int)(add_double(player.x , mul_double(1, player.vx)))][(int)player.y] << std::endl;
 
     if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] , 256) > 0)
         // std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] % 256 << std::endl;
         player.vy = div_double(-player.vy , 2.0); // collisions in y axis
+        std::cout << "Y collision: "<< map[(int)player.x][(int)(add_double(player.y , mul_double(1 , player.vy)))] << std::endl;
+        
     // else {
     //     std::cout << map[(int)player.x][(int)(player.y + 1 * player.vy)] << std::endl;
     // }
@@ -852,16 +1290,6 @@ int main()
         if (GameState == 0)
         {
             draw();
-            int entityX = res_X - 2;
-            int entityY = 2;
-
-            if (entityX >= 0 && entityX < res_X && entityY >= -res_Y / 2 && entityY < res_Y / 2)
-            {
-                // The entity is within the screen bounds, so draw a yellow dot at its position
-                int offset = entityX + (entityY + res_Y / 2) * res_X;
-                char_buff[offset] = 'F'; // Character for a dot
-                color_buff[offset] = 1;  // Color value for yellow
-            }
         }
         else if (GameState == 1)
         {
