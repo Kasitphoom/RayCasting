@@ -2,6 +2,8 @@
 #include <unordered_set>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include <cmath>
 #include <cstring>
 #include <cstdint>
@@ -10,13 +12,27 @@
 #include <chrono> // for high_resolution_clock and duration_cast
 #include <thread> // for sleep_for
 #include <ctime>
+// #include "include/asm_functions.h"
 
+extern "C" {
+    double calc_t(int r_ix, double r_x, double r_vx);
+    void lowest_time(double* r_y, double* t1, double* r_x, double* t2, int* r_ix, int* r_iy, double* r_vx, double* r_vy, int* r_ivx, int* r_ivy, double* r_dist);
+    void update_r_y(double* r_y, double r_vy, double t1);
+    void update_r_ix(int* r_ix, int r_ivx);
+    double update_r_x(int r_ix, double r_vx, int r_ivx);
+    void update_r_dist(double* r_dist, double t1);
+    bool compare_t1_t2(double t1, double t2);
+    int hmap_calc(int* hmap, int res_Y, double r_dist, double fisheye);
+    int modulo(int input, int divisor);
+    int typemap_func(int map);
+    double check_multiply(bool condition, int constant, double _true, double _false);
+    double update_lmap(double* lmap, double constant, int res_Y, int hmap);
+}
 extern "C"
 {
     int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
     int getPlayerVAngel(int mouseY, int mouseInitY, int mouse_speed);
     int checkAdd360deg(int playerAngle);
-    int modulo(int a, int b);
     int pressWx(double dy, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
     int pressWy(double dx, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
     double mul_double(double a, double b);
@@ -44,6 +60,8 @@ Window root;
 Window win;
 GC gc;
 int screen;
+
+bool gameEnd = false;
 
 int mouseX = 0;
 int mouseY = 0;
@@ -189,6 +207,15 @@ int textures[32 * 32 * 4]; // array containing 3 32x32 textures (1024 pixels); f
 int F_exit = 0; // turns to 1 when player presses esc.
 
 std::unordered_set<KeySym> pressedKeys;
+
+SDL_AudioSpec desiredSpec;
+extern void fill_audio(void *udata, Uint8 *stream, int len);
+
+static Uint8 *audio_chunk;
+static Uint32 audio_len;
+static Uint8 *audio_pos;
+
+Mix_Music* music;
 
 void getCurrentMousePosition(Display *display, int &mouseX, int &mouseY)
 {
@@ -357,7 +384,7 @@ void initGame()
 
     player.x = 6;
     player.y = 6.5;
-    player.ang_h = 450; // put the player somewhere in the middle, angle is in 0.1 degree increments
+    player.ang_h = 0; // put the player somewhere in the middle, angle is in 0.1 degree increments
 
     for (int x = 0; x < 32; x++) // texture generation
         for (int y = 0; y < 32; y++)
@@ -382,21 +409,15 @@ void initGame()
             //textures[x + y * 32 + 1024] = (12 + modulo(rand(), 2)) + (5 * logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) * 256;
             textures[add_int(x , add_int(mul_int(y , 32) , 1024))] =  add_int(( add_int(12,modulo(rand(), 2)) ),mul_int(( mul_int(5,logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) ),256))   ;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
+            
+
                                         
             //textures[x + y * 32 + 3072] = (12 + rand() % 2) + (4 + 4*((6<=x) && (x<=27) && (y>=6))) * 256;         
             //textures[x + y * 32 + 3072] = (12 + modulo(rand(), 2)) + (4 + 4*(logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) * 256;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
-            textures[add_int(add_int(x, mul_int(y, 32)), 3072)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(add_int(4, mul_int(4, logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) , 256));
+            textures[add_int(x, mul_int(y, 32)) + 3072] = add_int(add_int(12, modulo(rand(), 2)), mul_int(add_int(4, mul_int(4, logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) , 256));
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
-
-    // initialize sprite1
-    sp[0].type = 1;
-    sp[0].state = 1;
-    sp[0].map = 0;
-    sp[0].x = mul_double(1.5, 32);
-    sp[0].y = mul_double(1.5, 32);
-    sp[0].z = 0;
 }
 
 void cast() // main ray casting function
@@ -415,11 +436,11 @@ void cast() // main ray casting function
         // use %3600 to wrap the angles to 0-360 degree range
         double r_vx = sintab[(r_angle + 900) % 3600];
         // we will ned an integer step to navigate the map; +1/-1 depending on sign of r_vx
-        int r_ivx = (r_vx > 0) ? 1 : -1;
+        int r_ivx = compare_t1_t2(0.0, r_vx) ? 1 : -1;
 
         // now the same for vertical components
         double r_vy = sintab[r_angle % 3600];
-        int r_ivy = (r_vy > 0) ? 1 : -1;
+        int r_ivy = compare_t1_t2(0.0, r_vy) ? 1 : -1;
 
         // initial position of the ray; precise and integer values
         // ray starts from player position; tracing is done on doubles (x,y), map checks on integers(ix,iy)
@@ -442,41 +463,49 @@ void cast() // main ray casting function
             // distance to travel is the difference between double and int coordinate, +1 if moving to the right
             // example: x=0.3, map x=0, moving to the right, next grid is x=1 and distance is 1-0.3=0.7
             // to get time, divide the distance by speed in that direction
-            t1 = (r_ix - r_x + (r_vx > 0)) / r_vx;
+            t1 = calc_t(r_ix, r_x, r_vx);
             // the same for horizontal lines
-            t2 = (r_iy - r_y + (r_vy > 0)) / r_vy;
+            t2 = calc_t(r_iy, r_y, r_vy);
 
             // now we select the lower of two times, e.g. the closest intersection
-            if (t1 < t2)
+            if (compare_t1_t2(t1, t2))
             {                                    // intersection with vertical line
-                r_y += r_vy * t1;                // update y position
-                r_ix += r_ivx;                   // update x map position by +-1
-                r_x = r_ix - (r_vx < 0) * r_ivx; // we are on vertical line -> x coordinate = integer coordinate
-                r_dist += t1;                    // increment distance by velocity (=1) * time
+                // r_y += r_vy * t1;                // update y position
+                update_r_y(&r_y, r_vy, t1);
+                // r_ix += r_ivx;                   // update x map position by +-1
+                update_r_ix(&r_ix, r_ivx);
+                // r_x = r_ix - (r_vx < 0) * r_ivx; // we are on vertical line -> x coordinate = integer coordinate
+                r_x = update_r_x(r_ix, r_vx, r_ivx);
+                // r_dist += t1;                    // increment distance by velocity (=1) * time
+                update_r_dist(&r_dist, t1);
             }
             else
             { // intersection with horizontal line
-                r_x += r_vx * t2;
-                r_iy += r_ivy;
-                r_y = r_iy - (r_vy < 0) * r_ivy;
-                r_dist += t2;
+                
+                update_r_y(&r_x, r_vx, t2);
+                update_r_ix(&r_iy, r_ivy);
+                r_y = update_r_x(r_iy, r_vy, r_ivy);
+                update_r_dist(&r_dist, t2);
             }
+
         }
         // end of tracing; the distance is updated during steps, so there is no need to use slow pythagorean theory to calculate it
         // record wall height; it is inversely proportional to distance; apply fisheye correction term
-        hmap[xs] = (int)(res_Y / 2 / r_dist / fisheye[xs]);
+        hmap_calc(&hmap[xs], res_Y, r_dist, fisheye[xs]);
 
         // record the wall type; subtract 1 so map[x][y]=1 means wall type 0
-        typemap[xs] = map[r_ix][r_iy] % 256 - 1;
+        typemap[xs] = typemap_func(map[r_ix][r_iy]);
 
         // record the texture coordinate - it is the fractional part of x/y coordinate * texture size
-        tmap[xs] = (t1 < t2) ? 32 * fabs(r_y - (int)(r_y)) : 32 * fabs(r_x - (int)(r_x));
+        tmap[xs] = check_multiply(compare_t1_t2(t1, t2), 32, fabs(r_y - (int)(r_y)), fabs(r_x - (int)(r_x)));
 
         // wolfenstein 3D style lightning - Norts/south walls are brighter
-        lmap[xs] = (t1 < t2) ? 1 : 0.5;
+        lmap[xs] = compare_t1_t2(t1, t2) ? 1 : 0.5;
 
         // calculate brightness; it is proportional to height, 5.0 is arbitrary constant
-        lmap[xs] *= 5.0 / res_Y * hmap[xs];
+        // lmap[xs] *= 5.0 / res_Y * hmap[xs];
+        update_lmap(&lmap[xs], 5.0, res_Y, hmap[xs]);
+        // std::cout << (5.0 / res_Y * hmap[xs]) << ", " << update_lmap(&lmap[xs], 5.0, res_Y, hmap[xs]) << std::endl;
 
         // add to wall brightness to improve the contrast between walls and floor
         lmap[xs] = lmap[xs] + 0.2;
@@ -661,26 +690,17 @@ void handleEvent()
     }
 }
 
-void updateMovement()
-{
+void updateMovement(){
     double dx = player.accel * sintab[(int)player.ang_h % 3600];         // x step in the direction player is looking;
     double dy = player.accel * sintab[((int)player.ang_h + 900) % 3600]; // y step in the direction player is looking
 
-    if (pressedKeys.find(XK_w) != pressedKeys.end())
-    {
-        //player.vx += dy;
-        //player.vy += dx;
-        player.vx = add_double(player.vx , dy);
-        player.vy = add_double(player.vy , dx);
+    if (pressedKeys.find(XK_w) != pressedKeys.end()) {
+        player.vx += dy;
+        player.vy += dx;
     }
-    // player.vx += pressWx(dy,pressedKeys.find(XK_w),pressedKeys.end());
-    // player.vy += pressWy(dx,pressedKeys.find(XK_w),pressedKeys.end());
-    if (pressedKeys.find(XK_s) != pressedKeys.end())
-    {
-        // player.vx -= dy;
-        // player.vy -= dx;
-        player.vx = sub_double(player.vx , dy);
-        player.vy = sub_double(player.vy , dx);
+    if (pressedKeys.find(XK_s) != pressedKeys.end()) {
+        player.vx -= dy;
+        player.vy -= dx;
     }
     if (pressedKeys.find(XK_a) != pressedKeys.end())
     {
@@ -777,6 +797,37 @@ void updateMovement()
     player.y = add_double(player.y,player.vy); // original: player.y += player.vy;
     player.vx = mul_double(player.vx, sub_double(1 , player.friction)); // friction reduces velocity values -> original: player.vx *= (1 -player.friction);
     player.vy = mul_double(player.vy, sub_double(1 , player.friction)); // original: player.vy *= (1 -player.friction);
+}
+
+void fill_audio(void *udata, Uint8 *stream, int len)
+{
+    /* Only play if we have data left */
+    if ( audio_len == 0 )
+        return;
+
+    /* Mix as much data as possible */
+    len = ( len > audio_len ? audio_len : len );
+    SDL_MixAudio(stream, audio_pos, len, SDL_MIX_MAXVOLUME);
+    audio_pos += len;
+    audio_len -= len;
+}
+
+void InitSDL(){
+    if (SDL_Init(SDL_INIT_AUDIO) != 0){
+        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
+    }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        SDL_Log("Mix_OpenAudio failed: %s", Mix_GetError());
+    }
+
+    desiredSpec.freq = 44100;            // Sample rate (e.g., 44.1 kHz)
+    desiredSpec.format = AUDIO_S16SYS;   // Sample format (16-bit signed, little-endian)
+    desiredSpec.channels = 2;            // Number of audio channels (stereo)
+    desiredSpec.samples = 1024;          // Audio buffer size
+    desiredSpec.callback = fill_audio;  // Your audio callback function
+    desiredSpec.userdata = nullptr;       // User data (can be a pointer to your audio data)
+
 }
 
 void displayText(Display *display, Window win, GC gc)
@@ -910,33 +961,52 @@ int main()
     // int x = 31;
     // // std::cout << (15<=x<=16) << std::endl;
     std::cout << mul_double(1.5,1.5) << " "<<add_double(1.5,1.5) << std::endl;
-
+    InitSDL();
     initializeX();
     initGame();
+
+
+    music = Mix_LoadMUS("bad-to-the-bone.mp3");
+    if (music == NULL) {
+        SDL_Log("Mix_LoadMUS failed: %s", Mix_GetError());
+        return 1;
+    }
+
     std::thread timerThread(setTimer);
 
     XEvent event;
 
     while (true)
     {
-
         handleEvent();
         updateMovement();
         cast();
         //std::cout << GameState << std::endl;
         if (GameState == 0)
         {
+            gameEnd = false;
             draw();
             displayTimer();
             
         }
         else if (GameState == 1)
         {
+            if (!gameEnd)
+            {   
+                gameEnd = true;
+                Mix_PlayMusic(music, -1);
+                SDL_Delay(2000);
+            }
+            Mix_PauseMusic();
             drawScreen();
         }
         displayText(display, win, gc);
     }
     timerThread.join();
+
+    Mix_FreeMusic(music);
+    Mix_CloseAudio();
+    SDL_Quit();
 
     return 0;
 }
