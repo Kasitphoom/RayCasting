@@ -589,7 +589,8 @@ void drawScreen(){
         int color = 0;        // the color of the character to draw
         
         for (int y = 0; y < res_Y; y++){// go along the whole screen column, drawing either wall or floor/ceiling
-            int index = y*res_X + x;
+            //int index = y*res_X + x;
+            int index = add_int(mul_int(y,res_X),x);
             // std::cout << "index: " << index << std::endl;
 
             if (skull[index]==1){
@@ -603,7 +604,8 @@ void drawScreen(){
             // save the color in color buffer
             color_buff[offset] = color;
 
-            offset += res_X; // go down by 1 row
+            //offset += res_X; // go down by 1 row
+            offset = add_int(offset, res_X);
         }
         // end of column
     } // end of drawing
