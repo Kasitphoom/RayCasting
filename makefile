@@ -11,8 +11,8 @@ OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 ASM_OBJ = $(ASM_SRC:$(ASM_SRC_DIR)/%.s=$(BUILD_DIR)/%.o)
 
 $(BUILD_DIR)/%.o: $(ASM_SRC_DIR)/%.s
-	as -march=armv7-a -mfpu=neon-vfpv3 -o $@ $<
-
+	as  -mfpu=neon-vfpv3 -o $@ $<
+# -march=armv7-a
 $(BUILD_DIR)/$(TARGET): $(OBJ) $(ASM_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 

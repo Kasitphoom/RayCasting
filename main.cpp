@@ -18,6 +18,10 @@ extern "C" {
     void update_r_dist(double* r_dist, double t1);
     bool compare_t1_t2(double t1, double t2);
     int hmap_calc(int* hmap, int res_Y, double r_dist, double fisheye);
+    int modulo(int input, int divisor);
+    int typemap_func(int map);
+    double check_multiply(bool condition, int constant, double _true, double _false);
+    double update_lmap(double* lmap, double constant, int res_Y, int hmap);
 }
 
 Display* display;
@@ -269,11 +273,11 @@ void cast() // main ray casting function
         // use %3600 to wrap the angles to 0-360 degree range
         double r_vx = sintab[(r_angle + 900) % 3600];
         // we will ned an integer step to navigate the map; +1/-1 depending on sign of r_vx
-        int r_ivx = (r_vx > 0) ? 1 : -1;
+        int r_ivx = compare_t1_t2(0.0, r_vx) ? 1 : -1;
 
         // now the same for vertical components
         double r_vy = sintab[r_angle % 3600];
-        int r_ivy = (r_vy > 0) ? 1 : -1;
+        int r_ivy = compare_t1_t2(0.0, r_vy) ? 1 : -1;
 
         // initial position of the ray; precise and integer values
         // ray starts from player position; tracing is done on doubles (x,y), map checks on integers(ix,iy)
@@ -325,16 +329,18 @@ void cast() // main ray casting function
         hmap_calc(&hmap[xs], res_Y, r_dist, fisheye[xs]);
 
         // record the wall type; subtract 1 so map[x][y]=1 means wall type 0
-        typemap[xs] = map[r_ix][r_iy] % 256 - 1;
+        typemap[xs] = typemap_func(map[r_ix][r_iy]);
 
         // record the texture coordinate - it is the fractional part of x/y coordinate * texture size
-        tmap[xs] = (t1 < t2) ? 32 * fabs(r_y - (int)(r_y)) : 32 * fabs(r_x - (int)(r_x));
+        tmap[xs] = check_multiply(compare_t1_t2(t1, t2), 32, fabs(r_y - (int)(r_y)), fabs(r_x - (int)(r_x)));
 
         // wolfenstein 3D style lightning - Norts/south walls are brighter
         lmap[xs] = compare_t1_t2(t1, t2) ? 1 : 0.5;
 
         // calculate brightness; it is proportional to height, 5.0 is arbitrary constant
-        lmap[xs] *= 5.0 / res_Y * hmap[xs];
+        // lmap[xs] *= 5.0 / res_Y * hmap[xs];
+        update_lmap(&lmap[xs], 5.0, res_Y, hmap[xs]);
+        // std::cout << (5.0 / res_Y * hmap[xs]) << ", " << update_lmap(&lmap[xs], 5.0, res_Y, hmap[xs]) << std::endl;
 
         // add to wall brightness to improve the contrast between walls and floor
         lmap[xs] = lmap[xs] + 0.2;
