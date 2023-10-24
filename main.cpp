@@ -839,13 +839,7 @@ void initGame()
 
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 
-    // initialize sprite1
-    sp[0].type = 1;
-    sp[0].state = 1;
-    sp[0].map = 0;
-    sp[0].x = 1.5 * 32;
-    sp[0].y = 1.5 * 32;
-    sp[0].z = 0;
+    
 }
 
 void cast() // main ray casting function
@@ -1189,6 +1183,13 @@ void updateMovement(){
     {
         map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131584; // found door on y axis
         // std::cout << "Yes Door" << std::endl;
+        music = Mix_LoadMUS("sound/door-open.mp3");
+        if (music == NULL) {
+            SDL_Log("Mix_LoadMUS failed (2): %s", Mix_GetError());
+        }
+        Mix_PlayMusic(music, -1);
+        SDL_Delay(1000);
+        Mix_PauseMusic();
     }
 
     if (modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 5)
@@ -1196,6 +1197,13 @@ void updateMovement(){
         lever++;
         map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] = 131590; // found door on x axis
         // std::cout << "Yes Door" << std::endl;
+        music = Mix_LoadMUS("sound/door-open.mp3");
+        if (music == NULL) {
+            SDL_Log("Mix_LoadMUS failed (2): %s", Mix_GetError());
+        }
+        Mix_PlayMusic(music, -1);
+        SDL_Delay(1000);
+        Mix_PauseMusic();
     }
 
     if (modulo(map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] , 256) == 5)
@@ -1203,6 +1211,13 @@ void updateMovement(){
         lever++;
         map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131590; // found door on y axis
         // std::cout << "Yes Door" << std::endl;
+        music = Mix_LoadMUS("sound/door-open.mp3");
+        if (music == NULL) {
+            SDL_Log("Mix_LoadMUS failed (2): %s", Mix_GetError());
+        }
+        Mix_PlayMusic(music, -1);
+        SDL_Delay(1000);
+        Mix_PauseMusic();
     }
 
     if (modulo(map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] , 256) == 7)
