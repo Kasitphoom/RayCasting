@@ -260,18 +260,18 @@ void initGame()
 {
     // precalculate sine values. Important, we add 0.001 to avoid even angles where sin=0 or cos=0
     for (int i = 0; i < 3600; i++)
-        sintab[i] = sin((i + 0.001) * 0.1 * torad);
+        sintab[i] = sin(mul_double(add_double(i, 0.001), mul_double(0.1, torad)));
 
     // fisheye correction term (cosine of ray angle relative to the screen center, e.g. res_X/2)
     for (int i = 0; i < res_X; i++)
-        fisheye[i] = cos(0.1 * (i - res_X / 2) * torad * fov / res_X);
+        fisheye[i] = cos(mul_double(mul_double(0.1, (sub_double(i, div_double(res_X, 2)))), div_double(mul_double(torad, fov), res_X)));
 
     for (int i = 0; i < map_size; i++) // make walls on the map edges
     {
         map[i][0] = 1;
-        map[i][map_size - 1] = 1;
+        map[i][sub_int(map_size, 1)] = 1;
         map[0][i] = 1;
-        map[map_size - 1][i] = 1;
+        map[sub_int(map_size, 1)][i] = 1;
     };
 
     // map = {
@@ -382,13 +382,11 @@ void initGame()
             //textures[x + y * 32 + 1024] = (12 + modulo(rand(), 2)) + (5 * logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) * 256;
             textures[add_int(x , add_int(mul_int(y , 32) , 1024))] =  add_int(( add_int(12,modulo(rand(), 2)) ),mul_int(( mul_int(5,logicalOR(logicalOR(logicalOR(condition1, condition2), condition3), logicalAND(condition4, condition5))) ),256))   ;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
-            
-
                                         
             //textures[x + y * 32 + 3072] = (12 + rand() % 2) + (4 + 4*((6<=x) && (x<=27) && (y>=6))) * 256;         
             //textures[x + y * 32 + 3072] = (12 + modulo(rand(), 2)) + (4 + 4*(logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) * 256;
             //use add_int, mul_int, sub_int, div_int to replace +, *, -, / respectively
-            textures[add_int(x, mul_int(y, 32)) + 3072] = add_int(add_int(12, modulo(rand(), 2)), mul_int(add_int(4, mul_int(4, logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) , 256));
+            textures[add_int(add_int(x, mul_int(y, 32)), 3072)] = add_int(add_int(12, modulo(rand(), 2)), mul_int(add_int(4, mul_int(4, logicalAND(logicalAND(LTE(6,x), LTE(x,27)), GTE(y,6)))) , 256));
         }
     getCurrentMousePosition(display, mouseInitX, mouseInitY);
 
@@ -396,8 +394,8 @@ void initGame()
     sp[0].type = 1;
     sp[0].state = 1;
     sp[0].map = 0;
-    sp[0].x = 1.5 * 32;
-    sp[0].y = 1.5 * 32;
+    sp[0].x = mul_double(1.5, 32);
+    sp[0].y = mul_double(1.5, 32);
     sp[0].z = 0;
 }
 
