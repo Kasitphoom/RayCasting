@@ -1,6 +1,7 @@
 CXX = g++
+AS = as -mfpu=neon-vfpv3
 CXXFLAGS = -fdiagnostics-color=always -g
-LDFLAGS = -lX11
+LDFLAGS = -lX11 -lSDL2_mixer -lSDL2
 SRC_DIR = /home/pi/Proj/RayCasting
 ASM_SRC_DIR = /home/pi/Proj/RayCasting/asm
 BUILD_DIR = /home/pi/Proj/RayCasting
@@ -17,9 +18,13 @@ $(BUILD_DIR)/$(TARGET): $(OBJ) $(ASM_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $< $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
+	$(AS) -o $@ $<
 
 clean:
+            
 	rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET)
 
 .PHONY: clean
