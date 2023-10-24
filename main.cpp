@@ -749,6 +749,13 @@ void updateMovement(){
     {
         map[(int)(add_double(player.x , mul_double(2 , player.vx)))][(int)player.y] = 131584; // found door on x axis
         // std::cout << "Yes Door" << std::endl;
+        music = Mix_LoadMUS("sound/door-open.mp3");
+        if (music == NULL) {
+            SDL_Log("Mix_LoadMUS failed (2): %s", Mix_GetError());
+        }
+        Mix_PlayMusic(music, -1);
+        SDL_Delay(1000);
+        Mix_PauseMusic();
     }
     // if (map[(int)player.x][(int)(player.y + 2 * player.vy)] % 256 == 2)
     // {
@@ -759,6 +766,13 @@ void updateMovement(){
     {
         map[(int)player.x][(int)(add_double(player.y , mul_double(2 , player.vy)))] = 131584; // found door on y axis
         // std::cout << "Yes Door" << std::endl;
+        music = Mix_LoadMUS("sound/door-open.mp3");
+        if (music == NULL) {
+            SDL_Log("Mix_LoadMUS failed (2): %s", Mix_GetError());
+        }
+        Mix_PlayMusic(music, -1);
+        SDL_Delay(1000);
+        Mix_PauseMusic();
     }
 
     
@@ -965,13 +979,6 @@ int main()
     initializeX();
     initGame();
 
-
-    music = Mix_LoadMUS("bad-to-the-bone.mp3");
-    if (music == NULL) {
-        SDL_Log("Mix_LoadMUS failed: %s", Mix_GetError());
-        return 1;
-    }
-
     std::thread timerThread(setTimer);
 
     XEvent event;
@@ -990,7 +997,13 @@ int main()
             
         }
         else if (GameState == 1)
-        {
+        {   
+            drawScreen();
+            music = Mix_LoadMUS("sound/bad-to-the-bone.mp3");
+            if (music == NULL) {
+                SDL_Log("Mix_LoadMUS failed (1): %s", Mix_GetError());
+                return 1;
+            }
             if (!gameEnd)
             {   
                 gameEnd = true;
@@ -998,13 +1011,12 @@ int main()
                 SDL_Delay(2000);
             }
             Mix_PauseMusic();
-            drawScreen();
+            
         }
         displayText(display, win, gc);
     }
     timerThread.join();
 
-    Mix_FreeMusic(music);
     Mix_CloseAudio();
     SDL_Quit();
 
