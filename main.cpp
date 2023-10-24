@@ -220,7 +220,7 @@ int skull[res_X*res_Y] = {
 
 // Structure holding player data
 struct
-{
+{   
     double x, y;           // coordinates
     double vx, vy;         // velocities
     double ang_h, ang_v;   // horizontal and vertical angle
