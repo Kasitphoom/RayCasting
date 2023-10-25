@@ -58,6 +58,31 @@ extern "C"
     int GTE(int a, int b);
     int LTE(int a, int b);
     int EQ(int a, int b);
+    int getPlayerHAngel(int mouseX, int mouseInitX, int mouse_speed);
+    int getPlayerVAngel(int mouseY, int mouseInitY, int mouse_speed);
+    int checkAdd360deg(int playerAngle);
+    int modulo(int a, int b);
+    int pressWx(double dy, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
+    int pressWy(double dx, std::unordered_set<KeySym>::iterator it, std::unordered_set<KeySym>::iterator end);
+
+    //draw
+    int calculateLM1(int hmapX, int horizonPos, int resY);
+    int calculateLM2(int hmap_x, int horizon_pos, int res_Y);
+    int calculateAngle(int player_ang_h, int x, int res_X, int fov);
+    int mod(int dividend, int divisor);
+    int calculate_crdy(int y, int horizon_pos, int hmap);
+    int calculate_crd(int crdx, int crdy, int typemap);
+    int divide(int a, int b);
+    double mul_double(double a, double b);
+    double add_double(double a, double b);
+    double sub_double(double a, double b);
+    double div_double(double a, double b);
+    //double absolutef(double a);
+    int absolute(int a);
+    int add_int(int a, int b);
+    int sub_int(int a, int b);
+    int mul_int(int a, int b);
+    int div_int(int a, int b);
 }
 
 Display *display;
