@@ -1147,14 +1147,16 @@ void cast() // main ray casting function
 
 void draw()
 {
-    // go through the screen, column by column
-
+    // go through the screen, column by column 
     for (int x = 0; x < res_X; x++)
     {
         // upper limit of the wall, capped at half vertical resolution (middle of the screen=0)
-        int lm1 = -(hmap[x] + horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] + horizon_pos);
+        //int lm1 = -(hmap[x] + horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] + horizon_pos);
+        int lm1 = calculateLM1(hmap[x], horizon_pos, res_Y);
+
         // lower limit of the wall, capped at -half vertical resolution (middle of the screen=0)
-        int lm2 = (hmap[x] - horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] - horizon_pos);
+        //int lm2 = (hmap[x] - horizon_pos > res_Y / 2 ? res_Y / 2 : hmap[x] - horizon_pos);
+        int lm2 = calculateLM2(hmap[x], horizon_pos, res_Y);
 
         // array offset for putting characters
         int offset = x;   // we draw on the column x
@@ -1163,46 +1165,64 @@ void draw()
 
         for (int y = -res_Y / 2; y < res_Y / 2; y++) // go along the whole screen column, drawing either wall or floor/ceiling
         {
-            int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
-            double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
-            double dy = sintab[ang % 3600];
+            //int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
+            int ang = calculateAngle(player.ang_h, x, res_X, fov);
+            //double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
+            double dx = sintab[mod(ang + 900, 3600)];
+            //double dy = sintab[ang % 3600];
+            double dy = sintab[mod(ang, 3600)];
 
 
             if (y >= lm1 && y <= lm2) // are we drawing a wall?
             {
                 int crdx = tmap[x];                                      // we get texture x coordinate from coordinate buffer made in tracing step
-                int crdy = 16 + (int)(14 * (y + horizon_pos) / hmap[x]); // texture y coordinate depends on y, horizon position and height
-                int crd = crdx + 32 * crdy + 1024 * typemap[x];          // calculate coordinate to use in 1-d texture buffer
-                std::cout << crd <<", " << typemap[x] << std::endl;
-                character = textures[crd] % 256;                         // get texture pixel (1st byte)
-                color = textures[crd] / 256;                             // get texture color (2nd byte)
+                //int crdy = 16 + (14 * (y + horizon_pos) / hmap[x]); // texture y coordinate depends on y, horizon position and height
+                int crdy = calculate_crdy(y, horizon_pos, hmap[x]);
+                //int crd = crdx + 32 * crdy + 1024 * typemap[x];          // calculate coordinate to use in 1-d texture buffer
+                int crd = calculate_crd(crdx, crdy, typemap[x]);
 
-                character = character * lmap[x]; // multiply by the brightness value of light map
+                character = mod(textures[crd],256);                         // get texture pixel (1st byte)
+                color = divide(textures[crd],256);                             // get texture color (2nd byte)
+
+                //character = character * lmap[x]; // multiply by the brightness value of light map
+                character = mul_double(character, lmap[x]);
             }
             else // floor/ceiling?
             {
                 // calculate distance to the floor pixel; y and horizon_pos are in pixels whole, 0.1 is added here to avoid division by 0
-                double dz = (res_Y / 2) / (fabs(y + horizon_pos) + 0.1) / fisheye[x];
+                //double dz = (res_Y / 2.0) / (fabs(y + horizon_pos) + 0.1) / fisheye[x];
+                double dz = div_double(div_double(div_double(res_Y,2.0) , add_double (absolute(add_double(y , horizon_pos)), 0.1)), fisheye[x]);
 
-                int crdx = (int)(1024 + 32.0 * (player.x + dx * dz)) % 32; // floor/ceiling texture coordinates
-                int crdy = (int)(1024 + 32.0 * (player.y + dy * dz)) % 32; // 1024 is here just to avoid negative numbers
-                int mcx = (int)(player.x + dx * dz) % map_size;            // floor/ceiling map coordinates
-                int mcy = (int)(player.y + dy * dz) % map_size;
-                int crd = crdx + 32 * crdy; // base texture coordinate
+                //int crdx = (int)(1024 + 32.0 * (player.x + dx * dz)) % 32; // floor/ceiling texture coordinates
+                int crdx = mod(add_double(1024 , mul_double(32.0 , add_double(player.x , mul_double(dx , dz)))), 32);
+                //int crdy = (int)(1024 + 32 * (player.y + dy * dz)) % 32; // 1024 is here just to avoid negative numbers
+                int crdy = mod(add_double(1024 , mul_double(32.0 , add_double(player.y , mul_double(dy , dz)))), 32);
+                //int mcx = (int)(player.x + dx * dz) % map_size;            // floor/ceiling map coordinates
+                int mcx = mod(add_double(player.x , mul_double(dx , dz)), map_size);
+                //int mcy = (int)(player.y + dy * dz) % map_size;
+                int mcy = mod(add_double(player.y , mul_double(dy , dz)), map_size);
+                //int crd = crdx + 32 * crdy; // base texture coordinate
+                int crd = calculate_crd(crdx, crdy, 0);
 
                 if (y > (-horizon_pos))
-                    crd += 1024 * ((map[mcx][mcy] / 256) % 256); // 2nd byte = floor type
+                    //crd += 1024 * ((map[mcx][mcy] / 256) % 256); // 2nd byte = floor type
+                    crd = add_double(crd, mul_double(1024, mod(divide(map[mcx][mcy], 256), 256)));
                 else
-                    crd += 1024 * ((map[mcx][mcy] / 65536) % 256); // 3rd byte = ceiling type
+                    //crd += 1024 * ((map[mcx][mcy] / 65536) % 256); // 3rd byte = ceiling type
+                    crd = add_double(crd, mul_double(1024, mod(divide(map[mcx][mcy], 65536), 256)));
 
-                character = textures[crd] % 256; // get texture pixel (1st byte)
-                color = textures[crd] / 256;     // get texture color (2nd byte)
+                //character = textures[crd] % 256; // get texture pixel (1st byte)
+                character = mod(textures[crd], 256);
+                //color = textures[crd] / 256;     // get texture color (2nd byte)
+                color = divide(textures[crd], 256);
 
                 // add dithering to avoid ugly edges
-                character += ((abs(y) % 2) + (abs(x) % 2));
+                //character += ((abs(y) % 2) + (abs(x) % 2));
+                character = add_double(character, add_double(mod(absolute(y), 2), mod(absolute(x), 2)));
 
                 // simple vertical gradient, use lower brightness than walls for better contrast
-                character *= (1.0 / res_Y * abs(y + horizon_pos));
+                //character *= (1.0 / res_Y * abs(y + horizon_pos));
+                character = mul_double(character, mul_double(div_double(1.0, res_Y), absolute(add_double(y, horizon_pos))));
             }
 
             // limit the value to the limits of character gradient (especially important if there are multiple brightness modifiers)
@@ -1216,9 +1236,12 @@ void draw()
             // save the color in color buffer
             color_buff[offset] = color;
 
-            offset += res_X; // go down by 1 row
+            //offset += res_X; // go down by 1 row
+            offset = add_double(offset, res_X);
         }
         // end of column
+
+        
     } // end of drawing
 }
 
