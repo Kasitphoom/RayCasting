@@ -1168,9 +1168,9 @@ void draw()
             //int ang = (int)(3600 + player.ang_h + (x - res_X / 2) * fov / res_X); // calculate ray angle; needed for floor
             int ang = calculateAngle(player.ang_h, x, res_X, fov);
             //double dx = sintab[(ang + 900) % 3600];                               // steps in x and y direction, the same as in tracing, needed for floor
-            double dx = sintab[mod(ang + 900, 3600)];
+            double dx = sintab[modulo(ang + 900, 3600)];
             //double dy = sintab[ang % 3600];
-            double dy = sintab[mod(ang, 3600)];
+            double dy = sintab[modulo(ang, 3600)];
 
 
             if (y >= lm1 && y <= lm2) // are we drawing a wall?
@@ -1181,7 +1181,7 @@ void draw()
                 //int crd = crdx + 32 * crdy + 1024 * typemap[x];          // calculate coordinate to use in 1-d texture buffer
                 int crd = calculate_crd(crdx, crdy, typemap[x]);
 
-                character = mod(textures[crd],256);                         // get texture pixel (1st byte)
+                character = modulo(textures[crd],256);                         // get texture pixel (1st byte)
                 color = divide(textures[crd],256);                             // get texture color (2nd byte)
 
                 //character = character * lmap[x]; // multiply by the brightness value of light map
@@ -1194,13 +1194,13 @@ void draw()
                 double dz = div_double(div_double(div_double(res_Y,2.0) , add_double (absolute(add_double(y , horizon_pos)), 0.1)), fisheye[x]);
 
                 //int crdx = (int)(1024 + 32.0 * (player.x + dx * dz)) % 32; // floor/ceiling texture coordinates
-                int crdx = mod(add_double(1024 , mul_double(32.0 , add_double(player.x , mul_double(dx , dz)))), 32);
+                int crdx = modulo(add_double(1024 , mul_double(32.0 , add_double(player.x , mul_double(dx , dz)))), 32);
                 //int crdy = (int)(1024 + 32 * (player.y + dy * dz)) % 32; // 1024 is here just to avoid negative numbers
-                int crdy = mod(add_double(1024 , mul_double(32.0 , add_double(player.y , mul_double(dy , dz)))), 32);
+                int crdy = modulo(add_double(1024 , mul_double(32.0 , add_double(player.y , mul_double(dy , dz)))), 32);
                 //int mcx = (int)(player.x + dx * dz) % map_size;            // floor/ceiling map coordinates
-                int mcx = mod(add_double(player.x , mul_double(dx , dz)), map_size);
+                int mcx = modulo(add_double(player.x , mul_double(dx , dz)), map_size);
                 //int mcy = (int)(player.y + dy * dz) % map_size;
-                int mcy = mod(add_double(player.y , mul_double(dy , dz)), map_size);
+                int mcy = modulo(add_double(player.y , mul_double(dy , dz)), map_size);
                 //int crd = crdx + 32 * crdy; // base texture coordinate
                 int crd = calculate_crd(crdx, crdy, 0);
 
@@ -1212,7 +1212,9 @@ void draw()
                     crd = add_double(crd, mul_double(1024, mod(divide(map[mcx][mcy], 65536), 256)));
 
                 //character = textures[crd] % 256; // get texture pixel (1st byte)
-                character = mod(textures[crd], 256);
+                std::cout << textures[crd] % 256 << ", " << modulo(textures[crd], 256) << std::endl;
+                character = modulo(textures[crd], 256);
+                
                 //color = textures[crd] / 256;     // get texture color (2nd byte)
                 color = divide(textures[crd], 256);
 
