@@ -142,7 +142,7 @@ std::map<int, int> colorMap = {
 
 char timeLable[7] = "Time: ";
 std::string timerText = "00:00";
-int timerDuration = 2 * 60;
+int timerDuration = 8 * 60;
 
 // Initialize variables for minutes and seconds
 int minutes, seconds;
@@ -1758,11 +1758,13 @@ int main()
             
         }
         else if (GameState == 2){
+            drawWin();
+
             if (!gameEnd)
             {
                 gameEnd = true;
             }
-            drawWin();
+            
         }
         displayText(display, win, gc);
 
